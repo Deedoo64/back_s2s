@@ -20,4 +20,9 @@ module.exports.error = function (msg, color = 31) {
   );
 };
 
+module.exports.sleep = function (ms, text = "") {
+  if (!text.length !== 0) console.log(text);
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 // module.exports = { showObject, myprint };

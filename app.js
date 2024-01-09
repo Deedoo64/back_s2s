@@ -7,7 +7,8 @@ var logger = require("morgan");
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-var boardRouter = require("./routes/r_board");
+var itemsRouter = require("./routes/r_item");
+const port = 3000;
 
 var app = express();
 
@@ -22,9 +23,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
-app.use("/board", boardRouter);
+app.use("/items", itemsRouter);
 
-app.listen(3000);
+console.log(`Server running on port ${port} ...`);
+app.listen(port);
 
 module.exports = app;
 
