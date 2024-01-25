@@ -43,8 +43,9 @@ router.get("/", async (req, res) => {
   Util.msg("GET item (no params)...", 35);
 
   try {
-    const items = await City.find({}).exec();
-    res.json(items);
+    const items = await Item.find({}).exec();
+    res.json({ result: true, items });
+    console.log("Found %d items", items.length);
   } catch (e) {
     Util.error(e);
     res.status(500).json(e);
@@ -64,35 +65,81 @@ router.get("/", async (req, res) => {
 router.post("/", (req, res) => {
   console.log("In route item/POST");
 
-  var jsonArray = req.body;
+  var item = req.body;
   console.log("------------------- POST --------------------");
-  console.log(req.body);
+  console.log(item);
 
-  for (var i = 0; i < jsonArray.length; i++) {
-    var item = jsonArray[i];
+  const newItem = new Item({
+    name: item.name,
+    type: item.type,
+    location: item.location,
+    sublocation: item.sublocation,
+    quantity: item.quantity ? item.quantity : -1,
+    entryDate: item.entryDate,
+  });
 
-    const newItem = new Item({
-      name: item.name,
-      type: item.type,
-      location: item.location,
-      sublocation: item.sublocation,
-      quantity: item.quantity ? item.quantity : -1,
-    });
+  console.log("Just before to save ...");
 
-    newItem
-      .save()
-      .then((data) => {
-        console.log("\u001b[33mRequest succeed ! \u001b[0m");
-        res.json({ result: true, data: data });
-      })
-      .catch((error) => {
-        console.error(error);
-        res.json({
-          result: false,
-          errorMsg: "While accessing MongoDB Database",
+  Item.validate(newItem)
+    .then((validatedObject) => {
+      console.log("Objet valide :", validatedObject);
+
+      newItem
+        .save()
+        .then((data) => {
+          console.log("\u001b[33mRequest succeed ! \u001b[0m");
+          res.json({ result: true, data: data });
+        })
+        .catch((error) => {
+          console.error(error);
+          res.json({
+            result: false,
+            errorMsg: "While accessing MongoDB Database",
+          });
         });
+    })
+    .catch((validationError) => {
+      console.error("Erreur de validation :", validationError.errors);
+      res.json({
+        result: false,
+        errorMsg: "Object dooes not match the schema",
       });
-  }
+    });
+});
+
+router.post("/", (req, res) => {
+  console.log("In route item/POST");
+
+  // var jsonArray = req.body;
+  // console.log("------------------- POST --------------------");
+  // console.log(req.body);
+
+  // for (var i = 0; i < jsonArray.length; i++) {
+  //   var item = jsonArray[i];
+
+  //   const newItem = new Item({
+  //     name: item.name,
+  //     type: item.type,
+  //     location: item.location,
+  //     sublocation: item.sublocation,
+  //     quantity: item.quantity ? item.quantity : -1,
+  //     entryDate: item.entryDate,
+  //   });
+
+  //   newItem
+  //     .save()
+  //     .then((data) => {
+  //       console.log("\u001b[33mRequest succeed ! \u001b[0m");
+  //       res.json({ result: true, data: data });
+  //     })
+  //     .catch((error) => {
+  //       console.error(error);
+  //       res.json({
+  //         result: false,
+  //         errorMsg: "While accessing MongoDB Database",
+  //       });
+  //     });
+  // }
 });
 
 module.exports = router;
