@@ -86,4 +86,80 @@ router.post("/signin", (req, res) => {
     });
 });
 
+//===============================================================
+// POST : signup
+//===============================================================
+router.post("/signup", async (req, res) => {
+  console.log("/signup : req.body : ", req.body);
+  const checkStatus = checkBody(req.body, ["nickname", "email", "password"]);
+  if (!checkStatus.status) {
+    console.log("1 : checkStatus.error : ", checkStatus.error);
+    res.json({ result: false, error: checkStatus.error });
+    return;
+  }
+  const { nickname, email, password } = req.body;
+
+  try {
+    const nicknameExists = await User.findOne({ nickname: nickname });
+    if (nicknameExists) {
+      console.log("2 : data != null");
+      res.json({ result: false, error: "Nickname already exists" });
+      return;
+    }
+
+    const emailExists = await User.findOne({ email: email });
+    if (emailExists) {
+      console.log("3 : data != null");
+      res.json({ result: false, error: "Email already exists" });
+      return;
+    }
+
+    const hash = bcrypt.hashSync(password, 10);
+    const newUser = new User({
+      nickname: nickname,
+      email: email,
+      password: hash,
+      token: uid2(32),
+      autoLogin: false,
+    });
+
+    const savedUser = await newUser.save();
+    console.log("4 : save");
+    res.json({ result: true, user: savedUser });
+  } catch (error) {
+    console.error(error);
+    console.log("Error during User registration");
+    res.json({ result: false, error: "While accessing MongoDB Database" });
+  }
+});
+
+//===============================================================
+// PUT : /update
+//===============================================================
+router.put("/update/:id", async (req, res) => {
+  // console.log(`/update/${req.params.id} : ${req.body}`);
+  try {
+    const userId = req.params.id;
+    const { firstname, lastname } = req.body;
+
+    console.log("userId : ", userId);
+    console.log("firstname : ", firstname);
+    console.log("lastname : ", lastname);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { firstname, lastname },
+      { new: true } // Cette option renvoie l'utilisateur mis à jour
+    );
+
+    if (!updatedUser) {
+      return res.status(404).send("Utilisateur non trouvé");
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).send("Erreur lors de la mise à jour de l'utilisateur");
+  }
+});
+
 module.exports = router;
