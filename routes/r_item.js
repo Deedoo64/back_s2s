@@ -38,12 +38,15 @@ const Item = require("../models/m_item");
 // });
 
 // /* GET board listing. */
-router.get("/", async (req, res) => {
+router.get("/:id", async (req, res) => {
   // For now, just send the fist board found in the database.
-  Util.msg("GET item (no params)...", 35);
+  const userId = req.params.id;
+
+  console.log("In route item/GET");
+  Util.msg(`GET item (with userId : ${userId})...`, 35);
 
   try {
-    const items = await Item.find({}).exec();
+    const items = await Item.find({userId: userId}).exec();
     res.json({ result: true, items });
     console.log("Found %d items", items.length);
   } catch (e) {
@@ -69,9 +72,12 @@ router.post("/", (req, res) => {
   console.log("------------------- POST --------------------");
   console.log(item);
 
+  console.log ("Save item connected to User : ", item.userId);
+
   const newItem = new Item({
     name: item.name,
     type: item.type,
+    userId: item.userId,
     location: item.location,
     sublocation: item.sublocation,
     quantity: item.quantity ? item.quantity : -1,

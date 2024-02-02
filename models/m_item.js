@@ -19,6 +19,7 @@ const itemSchema = mongoose.Schema({
   sublocation: { type: String, required: false },
   quantity: { type: Number, required: true },
   entryDate: { type: Date, required: true },
+  userId: {type: mongoose.Schema.Types.ObjectId, ref: "users"}
 });
 
 const Item = mongoose.model("items", itemSchema);
