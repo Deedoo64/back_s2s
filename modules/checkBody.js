@@ -4,7 +4,8 @@ function checkBody(body, keys) {
   for (const field of keys) {
     if (!body[field] || body[field] === "") {
       value.status = false;
-      value.error += `Missing or empty "${field}"\n.`;
+      if (value.error !== "") value.error += "\n";
+      value.error += `Missing or empty "${field}".`;
     }
   }
 
