@@ -10,6 +10,6 @@ const userSchema = mongoose.Schema({
   autoLogin: Boolean,
 });
 
-const User = mongoose.model("users", userSchema);
+const User = mongoose.model("Users", userSchema);
 
 module.exports = User;
