@@ -41,7 +41,7 @@ router.post("/", (req, res) => {
   console.log("------------------- POST --------------------");
   console.log(storage);
 
-  console.log("Save storage connected to User : ", storage.userId);
+  Util.msg("Save storage connected to User : ", storage.userId, 33);
 
   const newStorage = new Storage({
     name: storage.name,
