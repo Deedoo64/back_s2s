@@ -46,7 +46,7 @@ router.get("/:id", async (req, res) => {
   Util.msg(`GET item (with userId : ${userId})...`, 35);
 
   try {
-    const items = await Item.find({userId: userId}).exec();
+    const items = await Item.find({ userId: userId }).exec();
     res.json({ result: true, items });
     console.log("Found %d items", items.length);
   } catch (e) {
@@ -72,14 +72,14 @@ router.post("/", (req, res) => {
   console.log("------------------- POST --------------------");
   console.log(item);
 
-  console.log ("Save item connected to User : ", item.userId);
+  console.log("Save item connected to User : ", item.userId);
 
   const newItem = new Item({
     name: item.name,
     type: item.type,
     userId: item.userId,
-    location: item.location,
-    sublocation: item.sublocation,
+    storageId: item.storageId,
+    unitId: item.unitId,
     quantity: item.quantity ? item.quantity : -1,
     entryDate: item.entryDate,
   });
