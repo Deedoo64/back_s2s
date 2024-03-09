@@ -15,6 +15,7 @@ const keyNameSchema = new mongoose.Schema({
 const itemSchema = mongoose.Schema({
   name: { type: String, required: true },
   type: { type: keyNameSchema, required: true },
+  location: { type: String, required: false },
   storageId: { type: mongoose.Schema.Types.ObjectId, ref: "storages" },
   unitId: { type: mongoose.Schema.Types.ObjectId, ref: "units" },
   quantity: { type: Number, required: true },

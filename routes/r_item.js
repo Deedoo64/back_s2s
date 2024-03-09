@@ -77,6 +77,7 @@ router.post("/", (req, res) => {
   const newItem = new Item({
     name: item.name,
     type: item.type,
+    location: item.location,
     userId: item.userId,
     storageId: item.storageId,
     unitId: item.unitId,
@@ -113,39 +114,70 @@ router.post("/", (req, res) => {
     });
 });
 
-router.post("/", (req, res) => {
-  console.log("In route item/POST");
+router.put("/:id", async (req, res) => {
+  console.log("In route item/PUT");
 
-  // var jsonArray = req.body;
-  // console.log("------------------- POST --------------------");
-  // console.log(req.body);
+  const itemId = req.params.id;
+  const updates = req.body;
 
-  // for (var i = 0; i < jsonArray.length; i++) {
-  //   var item = jsonArray[i];
+  console.log("------------------- PATCH --------------------");
+  console.log(`Update item ${itemId} with:`, updates);
 
-  //   const newItem = new Item({
-  //     name: item.name,
-  //     type: item.type,
-  //     location: item.location,
-  //     sublocation: item.sublocation,
-  //     quantity: item.quantity ? item.quantity : -1,
-  //     entryDate: item.entryDate,
-  //   });
+  try {
+    const item = await Item.findById(itemId).exec();
 
-  //   newItem
-  //     .save()
-  //     .then((data) => {
-  //       console.log("\u001b[33mRequest succeed ! \u001b[0m");
-  //       res.json({ result: true, data: data });
-  //     })
-  //     .catch((error) => {
-  //       console.error(error);
-  //       res.json({
-  //         result: false,
-  //         errorMsg: "While accessing MongoDB Database",
-  //       });
-  //     });
-  // }
+    if (!item) {
+      console.log(`Item with ID ${itemId} not found.`);
+      return res.status(404).json({
+        result: false,
+        errorMsg: `Item with ID ${itemId} not found.`,
+      });
+    }
+
+    // Mise à jour de l'item avec les données fournies dans le corps de la requête
+    Object.keys(updates).forEach((update) => (item[update] = updates[update]));
+
+    await item.save();
+
+    console.log("\u001b[33mItem updated successfully! \u001b[0m");
+    res.json({ result: true, data: item });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      result: false,
+      errorMsg: "Error while accessing MongoDB Database",
+    });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  const itemId = req.params.id;
+
+  console.log(`In route item/DELETE with itemId: ${itemId}`);
+
+  try {
+    const item = await Item.findByIdAndRemove(itemId);
+
+    // Vérifiez si l'item a été trouvé
+    if (!item) {
+      console.log(`Item with ID ${itemId} not found.`);
+      return res.status(404).json({
+        result: false,
+        errorMsg: `Item with ID ${itemId} not found.`,
+      });
+    }
+    console.log(`Item with ID ${itemId} successfully deleted.`);
+    res.json({
+      result: true,
+      message: `Item with ID ${itemId} successfully deleted.`,
+    });
+  } catch (error) {
+    console.error(`Error while deleting item with ID ${itemId}: `, error);
+    res.status(500).json({
+      result: false,
+      errorMsg: "Error while accessing MongoDB Database",
+    });
+  }
 });
 
 module.exports = router;
