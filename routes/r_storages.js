@@ -116,4 +116,37 @@ router.post("/", (req, res) => {
   // }
 });
 
+// Route PATCH pour mettre à jour un document Storage
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, type, color, location, orientation } = req.body;
+
+  console.log("In route storage/PATCH ...");
+
+  try {
+    // Assurez-vous d'inclure l'orientation du layout en utilisant la notation pointée pour les sous-documents
+    const updateObject = {
+      ...(name && { name }),
+      ...(type && { type }),
+      ...(color && { color }),
+      ...(location && { location }),
+      ...(orientation && { "layout.orientation": orientation }), // Mise à jour de l'orientation du layout
+    };
+    const updatedStorage = await Storage.findByIdAndUpdate(
+      id,
+      { $set: updateObject },
+      { new: true, runValidators: true, context: "query" } // Retourne le document mis à jour et assure l'exécution des validateurs
+    );
+
+    if (!updatedStorage) {
+      return res
+        .status(500)
+        .json({ result: false, errorMsg: `Storage with ID ${id} not found.` });
+    }
+
+    res.json({ result: true, data: updatedStorage });
+  } catch (error) {
+    res.status(400).json({ result: false, errorMsg: error });
+  }
+});
 module.exports = router;

@@ -120,7 +120,9 @@ router.put("/:id", async (req, res) => {
   const itemId = req.params.id;
   const updates = req.body;
 
-  console.log("------------------- PATCH --------------------");
+  // return res.json({ result: false, errorMsg: "Fausse erreur." });
+
+  console.log("------------------- PUT --------------------");
   console.log(`Update item ${itemId} with:`, updates);
 
   try {
@@ -169,7 +171,7 @@ router.delete("/:id", async (req, res) => {
     console.log(`Item with ID ${itemId} successfully deleted.`);
     res.json({
       result: true,
-      message: `Item with ID ${itemId} successfully deleted.`,
+      errorMsg: `Item with ID ${itemId} successfully deleted.`,
     });
   } catch (error) {
     console.error(`Error while deleting item with ID ${itemId}: `, error);
