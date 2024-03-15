@@ -163,7 +163,7 @@ router.delete("/:id", async (req, res) => {
     // Vérifiez si l'item a été trouvé
     if (!item) {
       console.log(`Item with ID ${itemId} not found.`);
-      return res.status(404).json({
+      return res.status(500).json({
         result: false,
         errorMsg: `Item with ID ${itemId} not found.`,
       });
@@ -171,7 +171,7 @@ router.delete("/:id", async (req, res) => {
     console.log(`Item with ID ${itemId} successfully deleted.`);
     res.json({
       result: true,
-      errorMsg: `Item with ID ${itemId} successfully deleted.`,
+      data: item,
     });
   } catch (error) {
     console.error(`Error while deleting item with ID ${itemId}: `, error);
@@ -182,4 +182,38 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.delete("/", async (req, res) => {
+  var itemsIds = req.body;
+  console.log("In route item/DELETE with itemsIds: ", itemsIds);
+
+  try {
+    const deletionResult = await Item.deleteMany({
+      _id: { $in: itemsIds },
+    });
+
+    if (deletionResult.deletedCount === 0) {
+      return res.status(500).json({
+        result: false,
+        errorMsg: "No items found with the provided IDs.",
+      });
+    }
+    console.log(`${deletionResult.deletedCount} items successfully deleted.`);
+    res.status(200).json({ result: true, data: deletionResult.deletedCount });
+  } catch (error) {
+    console.error("Error deleting items: ", error);
+    res.status(500).json({
+      result: false,
+      errorMsg: "An error occurred while deleting items.",
+    });
+  }
+});
+
+// Route PATCH pour mettre à jour un document Storage
+router.patch("/updateStorage", async (req, res) => {
+  const { ids, storageId, unitId } = req.body;
+
+  console.log("For all items with ids: ", ids);
+  console.log("Update storageId: ", storageId);
+  console.log("Update unitId: ", unitId);
+});
 module.exports = router;

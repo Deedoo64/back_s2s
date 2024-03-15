@@ -149,4 +149,35 @@ router.patch("/:id", async (req, res) => {
     res.status(400).json({ result: false, errorMsg: error });
   }
 });
+
+router.delete("/:id", async (req, res) => {
+  const storageId = req.params.id;
+
+  console.log(`In route storages/DELETE with storage_id: ${storageId}`);
+
+  try {
+    const storage = await Storage.findByIdAndRemove(storageId);
+
+    // Vérifiez si l'item a été trouvé
+    if (!storage) {
+      console.log(`Storage with ID ${storageId} not found.`);
+      return res.status(500).json({
+        result: false,
+        errorMsg: `Storage with ID ${storageId} not found.`,
+      });
+    }
+    console.log(`Item with ID ${storageId} successfully deleted.`);
+    res.json({
+      result: true,
+      data: storage,
+    });
+  } catch (error) {
+    console.error();
+    res.status(500).json({
+      result: false,
+      errorMsg: `Error while deleting Storage with ID ${storageId}: `,
+      error,
+    });
+  }
+});
 module.exports = router;
