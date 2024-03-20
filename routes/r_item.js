@@ -77,12 +77,19 @@ router.post("/", (req, res) => {
   const newItem = new Item({
     name: item.name,
     type: item.type,
-    location: item.location,
     userId: item.userId,
     storageId: item.storageId,
+    comment: item.comment,
     unitId: item.unitId,
     quantity: item.quantity ? item.quantity : -1,
     entryDate: item.entryDate,
+    expirationPolicy: item.expirationPolicy ? item.expirationPolicy : "",
+    customExpirationDate: item.customExpirationDate
+      ? item.customExpirationDate
+      : null,
+    customExpirationDuration: item.customExpirationDuration
+      ? item.customExpirationDuration
+      : 0,
   });
 
   console.log("Just before to save ...");

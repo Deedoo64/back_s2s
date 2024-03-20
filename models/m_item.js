@@ -15,11 +15,14 @@ const keyNameSchema = new mongoose.Schema({
 const itemSchema = mongoose.Schema({
   name: { type: String, required: true },
   type: { type: keyNameSchema, required: true },
-  location: { type: String, required: false },
   storageId: { type: mongoose.Schema.Types.ObjectId, ref: "storages" },
   unitId: { type: mongoose.Schema.Types.ObjectId, ref: "units" },
   quantity: { type: Number, required: true },
   entryDate: { type: Date, required: true },
+  expirationPolicy: { type: String, required: false },
+  customExpirationDate: { type: Date, required: false },
+  customExpirationDuration: { type: Number, required: false },
+  comment: { type: String, required: false },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
 });
 
