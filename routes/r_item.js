@@ -81,7 +81,8 @@ router.post("/", (req, res) => {
     storageId: item.storageId,
     comment: item.comment,
     unitId: item.unitId,
-    quantity: item.quantity ? item.quantity : -1,
+    quantity: item.quantity ? item.quantity : null,
+    unitNb: item.unitNb ? item.unitNb : -1,
     entryDate: item.entryDate,
     expirationPolicy: item.expirationPolicy ? item.expirationPolicy : "",
     customExpirationDate: item.customExpirationDate
@@ -93,6 +94,8 @@ router.post("/", (req, res) => {
   });
 
   console.log("Just before to save ...");
+
+  console.log("");
 
   Item.validate(newItem)
     .then((validatedObject) => {
