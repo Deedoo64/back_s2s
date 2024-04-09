@@ -8,6 +8,7 @@ const storageSchema = mongoose.Schema({
   color: { type: Number, required: false },
   layout: layoutSchema,
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  note: { type: String, required: false },
 });
 
 const Storage = mongoose.model("Storage", storageSchema);
