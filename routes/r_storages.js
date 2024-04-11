@@ -67,9 +67,12 @@ router.post("/", (req, res) => {
         })
         .catch((error) => {
           console.error(error);
+          const errorMessage = error.message
+            ? error.message
+            : "in storage validation";
           res.json({
             result: false,
-            errorMsg: "While accessing MongoDB Database",
+            errorMsg: errorMessage,
           });
         });
     })
@@ -84,37 +87,6 @@ router.post("/", (req, res) => {
 
 router.post("/", (req, res) => {
   console.log("In route item/POST");
-
-  // var jsonArray = req.body;
-  // console.log("------------------- POST --------------------");
-  // console.log(req.body);
-
-  // for (var i = 0; i < jsonArray.length; i++) {
-  //   var item = jsonArray[i];
-
-  //   const newItem = new Item({
-  //     name: item.name,
-  //     type: item.type,
-  //     location: item.location,
-  //     sublocation: item.sublocation,
-  //     quantity: item.quantity ? item.quantity : -1,
-  //     entryDate: item.entryDate,
-  //   });
-
-  //   newItem
-  //     .save()
-  //     .then((data) => {
-  //       console.log("\u001b[33mRequest succeed ! \u001b[0m");
-  //       res.json({ result: true, data: data });
-  //     })
-  //     .catch((error) => {
-  //       console.error(error);
-  //       res.json({
-  //         result: false,
-  //         errorMsg: "While accessing MongoDB Database",
-  //       });
-  //     });
-  // }
 });
 
 // Route PATCH pour mettre à jour un document Storage

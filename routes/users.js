@@ -49,7 +49,9 @@ router.post("/signup", async (req, res) => {
   } catch (error) {
     console.error(error);
     console.log("Error during User registration");
-    res.json({ result: false, error: "While accessing MongoDB Database" });
+    const errorMessage = error.message ? error.message : "in registration";
+
+    res.json({ result: false, error: errorMessage });
   }
 });
 
@@ -81,8 +83,9 @@ router.post("/signin", (req, res) => {
       res.json({ result: true, user });
     })
     .catch((error) => {
+      const errorMessage = error.message ? error.message : "in signin";
       console.error(error);
-      res.json({ result: false, error: "While accessing MongoDB Database" });
+      res.json({ result: false, error: errorMessage });
     });
 });
 
@@ -127,9 +130,10 @@ router.post("/signup", async (req, res) => {
     console.log("4 : save");
     res.json({ result: true, user: savedUser });
   } catch (error) {
+    const errorMessage = error.message ? error.message : "in signup";
     console.error(error);
     console.log("Error during User registration");
-    res.json({ result: false, error: "While accessing MongoDB Database" });
+    res.json({ result: false, error: errorMessage });
   }
 });
 
