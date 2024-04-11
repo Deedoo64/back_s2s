@@ -157,7 +157,7 @@ router.put("/:id", async (req, res) => {
     console.error(error);
     res.status(500).json({
       result: false,
-      errorMsg: "Error while accessing MongoDB Database",
+      errorMsg: error,
     });
   }
 });
