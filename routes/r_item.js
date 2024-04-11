@@ -111,7 +111,7 @@ router.post("/", (req, res) => {
           console.error(error);
           res.json({
             result: false,
-            errorMsg: "While accessing MongoDB Database",
+            errorMsg: error.message ? error.message : "Error in MongoDB save",
           });
         });
     })
@@ -119,7 +119,8 @@ router.post("/", (req, res) => {
       console.error("Erreur de validation :", validationError.errors);
       res.json({
         result: false,
-        errorMsg: "Object dooes not match the schema",
+        errorMsg:
+          "Object dooes not match the schema. " + validationError.errors,
       });
     });
 });
@@ -154,10 +155,14 @@ router.put("/:id", async (req, res) => {
     console.log("\u001b[33mItem updated successfully! \u001b[0m");
     res.json({ result: true, data: item });
   } catch (error) {
+    console.log("============ START ERROR ====================");
     console.error(error);
+    console.log("===============END ERROR =================");
+    const errorMessage = error.message ? error.message : "An error occurred";
+
     res.status(500).json({
       result: false,
-      errorMsg: error,
+      errorMsg: errorMessage,
     });
   }
 });
