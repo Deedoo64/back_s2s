@@ -190,9 +190,10 @@ router.delete("/:id", async (req, res) => {
     });
   } catch (error) {
     console.error(`Error while deleting item with ID ${itemId}: `, error);
+    const errorMessage = error.message ? error.message : "An error occurred";
     res.status(500).json({
       result: false,
-      errorMsg: "Error while accessing MongoDB Database",
+      errorMsg: errorMessage,
     });
   }
 });
