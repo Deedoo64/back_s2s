@@ -1,6 +1,6 @@
 {
-  "name": "launcher-b",
-  "version": "0.0.0",
+  "name": "vestai-backend",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "node app.js"
