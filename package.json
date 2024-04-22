@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node app.js"
+    "start": "node -e \"const fs = require('fs'); fs.writeFileSync('./build-info.json', JSON.stringify({ buildDate: new Date().toISOString() }));\" && node app.js",
+    "build": "echo 'No build step'",
+    "dev": "node -e \"const fs = require('fs'); fs.writeFileSync('./build-info.json', JSON.stringify({ buildDate: new Date().toISOString() }));\" && node app.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

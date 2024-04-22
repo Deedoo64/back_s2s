@@ -57,5 +57,9 @@ typings/
 # dotenv environment variables file
 .env
 
+# Do not include the file build in the project
+build-info.json
+
 # next.js build output
 .next
+.vercel

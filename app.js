@@ -1,5 +1,7 @@
 require("dotenv").config();
 
+console.log("Starting my server ...");
+
 var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
