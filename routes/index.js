@@ -10,7 +10,7 @@ router.get("/", function (req, res, next) {
 });
 
 router.get("/version", function (req, res, next) {
-  var version = "1.1";
+  var version = "1.2";
   console.log(`GET /version : ${version}`);
   res.json({ result: true, version: version });
 });

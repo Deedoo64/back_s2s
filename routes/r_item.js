@@ -47,10 +47,10 @@ router.get("/:id", async (req, res) => {
 
   try {
     const items = await Item.find({ userId: userId }).exec();
-    for (let i = 0; i < items.length; i++) {
-      item = items[i];
-      item.name = item.name + " - COMMIT";
-    }
+    // for (let i = 0; i < items.length; i++) {
+    //   item = items[i];
+    //   item.name = item.name + " - COMMIT";
+    // }
     res.json({ result: true, items });
     console.log("Found %d items", items.length);
   } catch (e) {
