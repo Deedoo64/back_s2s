@@ -129,19 +129,54 @@ router.post("/", (req, res) => {
     });
 });
 
-router.put("/:id", async (req, res) => {
-  console.log("In route item/PUT");
+// router.put("/:id", async (req, res) => {
+//   console.log("In route item/PUT");
 
+//   const itemId = req.params.id;
+//   const updates = req.body;
+
+//   // return res.json({ result: false, errorMsg: "Fausse erreur." });
+
+//   console.log("------------------- PUT --------------------");
+//   console.log(`Update item ${itemId} with:`, updates);
+
+//   try {
+//     const item = await Item.findById(itemId).exec();
+
+//     if (!item) {
+//       console.log(`Item with ID ${itemId} not found.`);
+//       return res.status(404).json({
+//         result: false,
+//         errorMsg: `Item with ID ${itemId} not found.`,
+//       });
+//     }
+
+//     // Mise à jour de l'item avec les données fournies dans le corps de la requête
+//     Object.keys(updates).forEach((update) => (item[update] = updates[update]));
+
+//     await item.save();
+
+//     console.log("\u001b[33mItem updated successfully! \u001b[0m");
+//     res.json({ result: true, data: item });
+//   } catch (error) {
+//     console.log("============ START ERROR ====================");
+//     console.error(error);
+//     console.log("===============END ERROR =================");
+//     const errorMessage = error.message ? error.message : "An error occurred";
+
+//     res.status(500).json({
+//       result: false,
+//       errorMsg: errorMessage,
+//     });
+//   }
+// });
+
+router.put("/:id", async (req, res) => {
   const itemId = req.params.id;
   const updates = req.body;
 
-  // return res.json({ result: false, errorMsg: "Fausse erreur." });
-
-  console.log("------------------- PUT --------------------");
-  console.log(`Update item ${itemId} with:`, updates);
-
   try {
-    const item = await Item.findById(itemId).exec();
+    const item = await Item.findById(itemId).exec(); // Assurez-vous que l'index est utilisé ici.
 
     if (!item) {
       console.log(`Item with ID ${itemId} not found.`);
@@ -151,22 +186,16 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    // Mise à jour de l'item avec les données fournies dans le corps de la requête
-    Object.keys(updates).forEach((update) => (item[update] = updates[update]));
+    // Appliquer la mise à jour sans recharger l'objet complet en mémoire
+    const result = await Item.updateOne({ _id: itemId }, { $set: updates });
 
-    await item.save();
-
-    console.log("\u001b[33mItem updated successfully! \u001b[0m");
-    res.json({ result: true, data: item });
+    console.log("Item updated successfully!");
+    res.json({ result: true, data: result });
   } catch (error) {
-    console.log("============ START ERROR ====================");
-    console.error(error);
-    console.log("===============END ERROR =================");
-    const errorMessage = error.message ? error.message : "An error occurred";
-
+    console.error("An error occurred", error);
     res.status(500).json({
       result: false,
-      errorMsg: errorMessage,
+      errorMsg: error.message || "An error occurred",
     });
   }
 });
