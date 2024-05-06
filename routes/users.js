@@ -17,7 +17,7 @@ router.post("/signup", async (req, res) => {
     res.json({ result: false, error: checkStatus.error });
     return;
   }
-  const { nickname, email, password } = req.body;
+  const { nickname, email, password, firstname, lastname } = req.body;
 
   try {
     const nicknameExists = await User.findOne({ nickname: nickname });
@@ -37,6 +37,8 @@ router.post("/signup", async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     const newUser = new User({
       nickname: nickname,
+      firstname: firstname,
+      lastname: lastname,
       email: email,
       password: hash,
       token: uid2(32),

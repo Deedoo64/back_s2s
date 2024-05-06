@@ -7,7 +7,7 @@ const storageSchema = mongoose.Schema({
   location: { type: String, required: false },
   color: { type: Number, required: false },
   layout: layoutSchema,
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
   note: { type: String, required: false },
 });
 

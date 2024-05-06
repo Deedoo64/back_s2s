@@ -5,6 +5,8 @@ var express = require("express");
 var router = express.Router();
 
 const Item = require("../models/m_item");
+const Storage = require("../models/storage");
+const { Unit } = require("../models/unit");
 
 // Create route to delete a Board
 
@@ -56,6 +58,89 @@ router.get("/:id", async (req, res) => {
   } catch (e) {
     Util.error(e);
     res.status(500).json(e);
+  }
+});
+
+// 192.168.1.49.3001/items/all/65ba1b89190fc47a58838d6e
+
+router.get("/all/:id", async (req, res) => {
+  console.log("Did : In route item/all/GET : req : ", req.params);
+  const userId = req.params.id;
+
+  if (!userId) {
+    res.json({ result: false, errorMsg: "User id is mandatory" });
+  }
+
+  console.log("req.query.id : ", userId);
+
+  try {
+    let items;
+    console.log(`Look for all items of user : ${userId}`);
+    items = await Item.find({ userId: userId })
+      .populate("storageId")
+      // .populate({
+      //   path: "unitId",
+      //   model: Unit, // Assurez-vous que c'est le nom du modèle comme enregistré
+      //   select: "_id name", // Sélection des champs que vous voulez inclure
+      // })
+      // .populate({
+      //   path: "unitId",
+      //   // select: "name description", // Spécifiez les champs nécessaires pour Unit
+      //   // populate: {
+      //   //   path: "unitId",
+      //   //   select: "name quantity", // Spécifiez les champs nécessaires pour les unités
+      //   // },
+      // })
+      .exec();
+
+    console.log("Found %d items", items.length);
+
+    let json = "";
+    json += "[\n";
+
+    items.forEach((item) => {
+      let storageName = item.storageId ? item.storageId.name : "";
+      let storageId = item.storageId ? item.storageId._id : "";
+      let unitName = item.unitId ? item.unitId.name : "";
+      let unitId = item.unitId ? item.unitId._id : "";
+      if (storageId != "" && unitId != "") {
+        storageId = "";
+      }
+      let store = "null";
+      let storeType = "storageId";
+      if (storageId != "") {
+        store = `"${storageId}"`;
+        storeType = "storageId";
+      }
+      if (unitId != "") {
+        store = `"${unitId}"`;
+        storeType = "unitId";
+      }
+
+      // console.log("unit name : ", unitName, "unit id : ", item.unitId);
+
+      console.log(
+        `ID: ${item._id}, ${store}, ${item.name} (${item.type.name})`
+      );
+
+      json += `   { "itemId": "${item._id}", "name": "${item.name}", "type": "${item.type.name}", "${storeType}" : ${store}, \n`;
+
+      // console.log(
+      //   `${item.name} (${item.type.name}): ${
+      //     item.storageId ? item.storageId.name : ""
+      //   } ${
+      //     item.unitId ? `- Unit ${item.unitId.name}: ${item.units[0].name}` : ""
+      //   }`
+      // );
+    });
+
+    json += "]\n";
+
+    console.log(json);
+    res.json({ result: true, items });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, errorMsg: error.message });
   }
 });
 
@@ -123,8 +208,7 @@ router.post("/", (req, res) => {
       console.error("Erreur de validation :", validationError.errors);
       res.json({
         result: false,
-        errorMsg:
-          "Object dooes not match the schema. " + validationError.errors,
+        errorMsg: "Item dooes not match the schema. " + validationError.errors,
       });
     });
 });
@@ -175,12 +259,19 @@ router.put("/:id", async (req, res) => {
   const itemId = req.params.id;
   const updates = req.body;
 
+  if (!itemId) {
+    return res.status(500).json({
+      result: false,
+      errorMsg: `Missing ID in route PUT.`,
+    });
+  }
+
   try {
     const item = await Item.findById(itemId).exec(); // Assurez-vous que l'index est utilisé ici.
 
     if (!item) {
       console.log(`Item with ID ${itemId} not found.`);
-      return res.status(404).json({
+      return res.status(500).json({
         result: false,
         errorMsg: `Item with ID ${itemId} not found.`,
       });
@@ -203,7 +294,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const itemId = req.params.id;
 
-  console.log(`In route item/DELETE with itemId: ${itemId}`);
+  console.log(`In route DELETE /item with itemId: ${itemId}`);
 
   try {
     const item = await Item.findByIdAndRemove(itemId);
@@ -233,7 +324,14 @@ router.delete("/:id", async (req, res) => {
 
 router.delete("/", async (req, res) => {
   var itemsIds = req.body;
-  console.log("In route item/DELETE with itemsIds: ", itemsIds);
+  console.log("In route DELETE /items with itemsIds: ", itemsIds);
+
+  if (!itemsIds || itemsIds.length === 0) {
+    return res.status(400).json({
+      result: false,
+      errorMsg: "No item IDs provided.",
+    });
+  }
 
   try {
     const deletionResult = await Item.deleteMany({

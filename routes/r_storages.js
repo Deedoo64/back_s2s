@@ -80,7 +80,7 @@ router.post("/", (req, res) => {
       console.error("Erreur de validation :", validationError.errors);
       res.json({
         result: false,
-        errorMsg: "Object dooes not match the schema",
+        errorMsg: "Storage dooes not match the schema",
       });
     });
 });

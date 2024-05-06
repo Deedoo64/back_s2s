@@ -27,8 +27,8 @@ const quantitySchema = new mongoose.Schema({
 const itemSchema = mongoose.Schema({
   name: { type: String, required: true },
   type: { type: keyNameSchema, required: true },
-  storageId: { type: mongoose.Schema.Types.ObjectId, ref: "storages" },
-  unitId: { type: mongoose.Schema.Types.ObjectId, ref: "units" },
+  storageId: { type: mongoose.Schema.Types.ObjectId, ref: "Storage" },
+  unitId: { type: mongoose.Schema.Types.ObjectId, ref: "Unit" },
   quantity: { type: quantitySchema, required: false },
   volume: { type: Number, required: false },
   volumeUnit: { type: String, required: false },
@@ -38,7 +38,7 @@ const itemSchema = mongoose.Schema({
   customExpirationDate: { type: Date, required: false },
   customExpirationDuration: { type: Number, required: false },
   comment: { type: String, required: false },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
 });
 
 const Item = mongoose.model("items", itemSchema);

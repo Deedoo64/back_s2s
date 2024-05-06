@@ -11,7 +11,7 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var itemsRouter = require("./routes/r_item");
 var storagesRouter = require("./routes/r_storages");
-const port = 3000;
+const port = 3001;
 
 var app = express();
 

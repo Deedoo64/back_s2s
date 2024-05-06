@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node -e \"const fs = require('fs'); fs.writeFileSync('./build-info.json', JSON.stringify({ buildDate: new Date().toISOString() }));\" && node app.js",
-    "build": "echo '{\"buildDate\":\"2024-04-22T14:39:18.010Z\"} > build-info.json'",
+    "build": "echo '{\"buildDate\":\"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}' > build-info.json",
     "dev": "node -e \"const fs = require('fs'); fs.writeFileSync('./build-info.json', JSON.stringify({ buildDate: new Date().toISOString() }));\" && node app.js"
   },
   "dependencies": {
