@@ -157,6 +157,11 @@ router.get("/all/:id", async (req, res) => {
 router.post("/", (req, res) => {
   console.log("In route item/POST");
 
+  // return res.status(500).json({
+  //   result: false,
+  //   errorMsg: "Simulate error in POST item",
+  // });
+
   var item = req.body;
   console.log("------------------- POST --------------------");
   console.log(item);
@@ -256,6 +261,9 @@ router.post("/", (req, res) => {
 // });
 
 router.put("/:id", async (req, res) => {
+  console.log("In route PUT /item");
+  console.log("res.body : ", req.body);
+
   const itemId = req.params.id;
   const updates = req.body;
 
@@ -295,6 +303,14 @@ router.delete("/:id", async (req, res) => {
   const itemId = req.params.id;
 
   console.log(`In route DELETE /item with itemId: ${itemId}`);
+  if (itemId === undefined || itemId === null || itemId === "") {
+    res.status(500).json({
+      result: false,
+      errorMsg: "Missing item ID in route DELETE.",
+    });
+
+    return;
+  }
 
   try {
     const item = await Item.findByIdAndRemove(itemId);

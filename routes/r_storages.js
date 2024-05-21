@@ -92,7 +92,7 @@ router.post("/", (req, res) => {
 // Route PATCH pour mettre à jour un document Storage
 router.patch("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, type, color, location, orientation, note } = req.body;
+  const { name, type, color, location, layout, note } = req.body;
 
   console.log("In route storage/PATCH ...");
 
@@ -104,8 +104,11 @@ router.patch("/:id", async (req, res) => {
       ...(color && { color }),
       ...(location && { location }),
       ...(note && { note }),
-      ...(orientation && { "layout.orientation": orientation }), // Mise à jour de l'orientation du layout
+      ...(layout && { "layout.orientation": layout.orientation }), // Mise à jour de l'orientation du layout
     };
+
+    // Affiche l'orientation
+    console.log("Orientation :", layout.orientation);
     const updatedStorage = await Storage.findByIdAndUpdate(
       id,
       { $set: updateObject },
