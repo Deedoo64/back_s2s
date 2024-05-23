@@ -168,4 +168,83 @@ router.put("/update/:id", async (req, res) => {
   }
 });
 
+//===============================================================
+// GET : Get user info from its ID
+//===============================================================
+router.get("/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  console.log("In route GET:/users/<id> : userId : ", userId);
+  if (!userId) {
+    res.json({
+      result: false,
+      error: "Missing userId in route GET:/users/<id>",
+    });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ _id: userId })
+      .select("-password -token")
+      .exec();
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `User not found with id : ${userId}`,
+      });
+
+      return;
+    }
+    console.log("user : ", user);
+    res.json({ result: true, data: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, errorMsg: error.message });
+  }
+});
+
+//===============================================================
+// POST : addTokens (used by IA)
+//===============================================================
+router.post("/addTokens", async (req, res) => {
+  const { userId, tokensCount } = req.body;
+  console.log("/addTokens : req.body : ", req.body);
+
+  const checkStatus = checkBody(req.body, ["userId", "tokensCount"]);
+  if (!checkStatus.status) {
+    console.log("1 : checkStatus.error : ", checkStatus.error);
+    res.json({ result: false, error: checkStatus.error });
+    return;
+  }
+
+  try {
+    // const user = await User.findOneAndUpdate(
+    //   { _id: userId },
+    //   { $inc: { "ia.tokenUsed": tokensCount } },
+    //   { new: true } // Retourne le document mis à jour
+    // );
+    const currentDate = new Date();
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        $inc: { "ia.tokensUsed": tokensCount },
+        $set: { "ia.lastTokenUsedDate": currentDate },
+      },
+      { new: true } // Retourne le document mis à jour
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        result: false,
+        errorMsg: `User not found with id: ${userId}`,
+      });
+    }
+
+    res.json({ result: true, data: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, errorMsg: error.message });
+  }
+});
+
 module.exports = router;
