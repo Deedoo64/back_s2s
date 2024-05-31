@@ -7,6 +7,7 @@ const FirebaseAdmin = require("../modules/firebase");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
+const { refreshToken } = require("firebase-admin/app");
 
 //===============================================================
 // POST : signup
@@ -16,7 +17,7 @@ router.post("/signup", async (req, res) => {
   const checkStatus = checkBody(req.body, ["nickname", "email", "password"]);
   if (!checkStatus.status) {
     console.log("1 : checkStatus.error : ", checkStatus.error);
-    res.json({ result: false, error: checkStatus.error });
+    res.json({ result: false, errorMsg: checkStatus.error });
     return;
   }
   const { nickname, email, password, firstname, lastname } = req.body;
@@ -25,14 +26,14 @@ router.post("/signup", async (req, res) => {
     const nicknameExists = await User.findOne({ nickname: nickname });
     if (nicknameExists) {
       console.log("2 : data != null");
-      res.json({ result: false, error: "Nickname already exists" });
+      res.json({ result: false, errorMsg: "Nickname already exists" });
       return;
     }
 
     const emailExists = await User.findOne({ email: email });
     if (emailExists) {
       console.log("3 : data != null");
-      res.json({ result: false, error: "Email already exists" });
+      res.json({ result: false, errorMsg: "Email already exists" });
       return;
     }
 
@@ -43,52 +44,89 @@ router.post("/signup", async (req, res) => {
       lastname: lastname,
       email: email,
       password: hash,
-      token: uid2(32),
+      token: uid2(32), // Token created here
       autoLogin: false,
       source: "Email",
     });
 
     const savedUser = await newUser.save();
     console.log("4 : save");
-    res.json({ result: true, user: savedUser });
+    res.json({ result: true, data: savedUser });
   } catch (error) {
     console.error(error);
     console.log("Error during User registration");
     const errorMessage = error.message ? error.message : "in registration";
 
-    res.json({ result: false, error: errorMessage });
+    res.json({ result: false, errorMsg: errorMessage });
   }
 });
 
 //===============================================================
 // POST : signin
 //===============================================================
-router.post("/signin", (req, res) => {
+router.post("/signin", async (req, res) => {
+  console.log("/signin : req.body : ", req.body);
   const checkStatus = checkBody(req.body, ["email", "password"]);
+  if (!checkStatus.status) {
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      res.json({ result: false, errorMsg: "Email not found" });
+      return;
+    }
+
+    if (!bcrypt.compareSync(req.body.password, user.password)) {
+      res.json({ result: false, errorMsg: "Wrong password" });
+      return;
+    }
+
+    console.log("About to save : ", user);
+
+    // Renouveler le token et le sauvegarder
+    user.token = uid2(32);
+    await user.save();
+    // Peut etre juste mad token au lieu de resauver tout
+
+    console.log("user : ", user);
+    res.json({ result: true, data: user });
+  } catch (error) {
+    const errorMessage = error.message ? error.message : "in signin";
+    console.error(error);
+    res.json({ result: false, errorMsg: errorMessage });
+  }
+});
+
+//===============================================================
+// POST : signin with token, avoid sending password
+//===============================================================
+router.post("/signinWithToken", (req, res) => {
+  const checkStatus = checkBody(req.body, ["token"]);
   if (!checkStatus.status) {
     res.json({ result: false, error: checkStatus.error });
     return;
   }
 
   User.findOne({
-    email: req.body.email,
+    token: req.body.token,
   })
     .then((user) => {
       if (!user) {
-        res.json({ result: false, error: "Email not found" });
-        return;
-      }
-
-      if (!bcrypt.compareSync(req.body.password, user.password)) {
-        res.json({ result: false, error: "Wrong password" });
+        res.json({
+          result: false,
+          error: "No user found for token or token expired",
+        });
         return;
       }
 
       console.log("user : ", user);
-      res.json({ result: true, user });
+      res.json({ result: true, data: user });
     })
     .catch((error) => {
-      const errorMessage = error.message ? error.message : "in signin";
+      const errorMessage = error.message ? error.message : "in signinWithToken";
       console.error(error);
       res.json({ result: false, error: errorMessage });
     });
@@ -197,35 +235,48 @@ router.post("/fromFirebase", async (req, res) => {
 });
 
 //===============================================================
-// POST : /linkAnonymousToFirebase
+// POST : /desanonymateAccount
 // Link a Google or new Email/Password account to an anonymous account
 //===============================================================
-router.post("/linkAnonymousToFirebase", async (req, res) => {
-  console.log("/linkAnonymousToFirebase : req.body : ", req.body);
+router.post("/desanonymateAccount", async (req, res) => {
+  console.log("/desanonymateAccount : req.body : ", req.body);
   const checkStatus = checkBody(req.body, [
-    "firebaseUID",
-    "anonymousUID",
+    "firebaseUID", // New firebase connection, may exists in DB
+    "anonymousUID", // Existing anonymous account
     "email",
     "source",
+    "policy",
   ]);
-  const { firebaseUID, anonymousUID, email, source } = req.body;
+  // policy may have following value :
+  // "keepAnonymous" : anonymous account data are lost,
+  // "keepFirebase" : previous firebase user data are lost,
+  // "" : Error if previous firebase user exists
+  const { firebaseUID, anonymousUID, email, source, policy } = req.body;
   // Check if an account with same firebaseUID already exists
   const existingUserWithFirebaseUID = await User.findOne({
     firebaseUID: firebaseUID,
   });
   if (existingUserWithFirebaseUID) {
-    Util.error(
-      `User  already ${existingUserWithFirebaseUID.email} exists with firebaseUID : `,
-      firebaseUID
-    );
-    Util.error("It can not be associted to an anonymous user");
-    res.json({
-      result: false,
-      errorMsg: `Account ${existingUserWithFirebaseUID.email}  has already been associated with an anonymous account`,
-    });
-    return;
+    if (policy === "") {
+      Util.error(
+        `User  already ${existingUserWithFirebaseUID.email} exists with firebaseUID : `,
+        firebaseUID
+      );
+      Util.error(
+        "It can not be associted to an anonymous user, send errorCode : 10"
+      );
+      res.json({
+        result: false,
+        errorCode: 10, // Should be handled in front-end
+        errorMsg: `Account ${existingUserWithFirebaseUID.email}  has already been associated with an anonymous account`,
+      });
+      return;
+    }
   }
 
+  // Replace anonymous account by a new one (Google, Facebook, etc.)
+  // In mongoDB, update the firebaseUID of anonymous account matching anonymousUID
+  // with the new firebaseUID.
   try {
     const updatedUser = await User.findOneAndUpdate(
       { firebaseUID: anonymousUID },
@@ -237,12 +288,14 @@ router.post("/linkAnonymousToFirebase", async (req, res) => {
       { new: true } // Cette option renvoie le document mis à jour
     );
 
-    // Delete the anonymous user
+    console.log("Updated user : ", updatedUser);
+
+    // Remove obsolete anonymous account in firebase
     try {
       await FirebaseAdmin.auth().deleteUser(anonymousUID);
       Util.msg("Anonymous user deleted successfully", 32);
     } catch (error) {
-      Util.error("Anonymous user not deleted", 31);
+      Util.warning("Anonymous user not deleted", 31);
     }
 
     res.json({ result: true, data: updatedUser });

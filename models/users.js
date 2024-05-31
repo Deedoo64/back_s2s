@@ -34,7 +34,7 @@ const userSchema = mongoose.Schema({
   source: {
     type: String,
     enum: ["Google", "Facebook", "Anonymous", "Email"], // Make consistent with UserSource in front-end
-    default: "email",
+    default: "Email",
   },
 });
 
