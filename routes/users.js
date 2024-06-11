@@ -237,6 +237,11 @@ router.post("/fromFirebase", async (req, res) => {
 //===============================================================
 // POST : /desanonymateAccount
 // Link a Google or new Email/Password account to an anonymous account
+const POLICIES = {
+  KEEP_ANONYMOUS: "KeepAnonymous",
+  KEEP_FIREBASE: "KeepFirebase",
+  RETURN_ERROR_IF_FIREBASE_ALREADY_EXIST: "ErrorIfFirebaseAlreadyExist",
+};
 //===============================================================
 router.post("/desanonymateAccount", async (req, res) => {
   console.log("/desanonymateAccount : req.body : ", req.body);
@@ -247,19 +252,95 @@ router.post("/desanonymateAccount", async (req, res) => {
     "source",
     "policy",
   ]);
+
+  if (!checkStatus) {
+    return res.status(400).json({
+      result: false,
+      errorMsg: "Invalid request body",
+    });
+  }
   // policy may have following value :
   // "keepAnonymous" : anonymous account data are lost,
   // "keepFirebase" : previous firebase user data are lost,
   // "" : Error if previous firebase user exists
   const { firebaseUID, anonymousUID, email, source, policy } = req.body;
+
+  // try {
+  //   const existingUserWithFirebaseUID = await User.findOne({ firebaseUID });
+
+  //   if (existingUserWithFirebaseUID) {
+  //     if (policy === POLICIES.RETURN_ERROR_IF_FIREBASE_ALREADY_EXIST) {
+  //       Util.error(
+  //         `User ${existingUserWithFirebaseUID.email} already exists with firebaseUID: ${firebaseUID}`
+  //       );
+  //       return res.json({
+  //         result: false,
+  //         errorCode: 10,
+  //         errorMsg: `Account ${existingUserWithFirebaseUID.email} has already been associated with an anonymous account`,
+  //       });
+  //     }
+
+  //     if (policy === POLICIES.KEEP_FIREBASE) {
+  //       const deletedUser = await User.findOneAndDelete({
+  //         firebaseUID: anonymousUID,
+  //       });
+  //       console.log("Deleted user : ", deletedUser);
+  //       Util.msg("Anonymous user deleted successfully", 32);
+
+  //       return res.json({ result: true, data: existingUserWithFirebaseUID });
+  //     }
+
+  //     if (policy === POLICIES.KEEP_ANONYMOUS) {
+  //       await User.findOneAndDelete({ firebaseUID });
+  //     } else {
+  //       Util.error("Unknown policy : ", policy);
+  //       return res.json({
+  //         result: false,
+  //         errorMsg: `Unknown policy ${policy} in desanonymateAccount`,
+  //       });
+  //     }
+  //   }
+
+  //   const updatedUser = await User.findOneAndUpdate(
+  //     { firebaseUID: anonymousUID },
+  //     {
+  //       firebaseUID,
+  //       email,
+  //       source,
+  //     },
+  //     { new: true }
+  //   );
+
+  //   console.log("Updated user : ", updatedUser);
+
+  //   try {
+  //     await FirebaseAdmin.auth().deleteUser(anonymousUID);
+  //     Util.msg("Anonymous user deleted successfully", 32);
+  //   } catch (error) {
+  //     Util.warning("Anonymous user not deleted", 31);
+  //   }
+
+  //   return res.json({ result: true, data: updatedUser });
+  // } catch (error) {
+  //   console.error(error);
+  //   return res.json({
+  //     result: false,
+  //     errorMsg: error.message || "Error in updating a user in Firebase",
+  //   });
+  // }
+
   // Check if an account with same firebaseUID already exists
+  // MY_VERSION
   const existingUserWithFirebaseUID = await User.findOne({
     firebaseUID: firebaseUID,
   });
+  let deleteFirebaseUser = false;
   if (existingUserWithFirebaseUID) {
-    if (policy === "") {
+    // If the target connexion alraedy exists in mongoDB, it means that
+    // it already contains data. If no policy is provided, generate an error message.
+    if (policy === POLICIES.RETURN_ERROR_IF_FIREBASE_ALREADY_EXIST) {
       Util.error(
-        `User  already ${existingUserWithFirebaseUID.email} exists with firebaseUID : `,
+        `User ${existingUserWithFirebaseUID.email} already exists with firebaseUID : `,
         firebaseUID
       );
       Util.error(
@@ -269,6 +350,42 @@ router.post("/desanonymateAccount", async (req, res) => {
         result: false,
         errorCode: 10, // Should be handled in front-end
         errorMsg: `Account ${existingUserWithFirebaseUID.email}  has already been associated with an anonymous account`,
+      });
+      return;
+    } else if (policy == POLICIES.KEEP_FIREBASE) {
+      // In this case, the previous connection is kept, and the anonymous account is deleted
+      // 1.a) The anonymous account is deleted in mongoDB ...
+      try {
+        const deletedUser = await User.findOneAndDelete({
+          firebaseUID: anonymousUID,
+        });
+        console.log("Deleted user : ", deletedUser);
+        Util.msg("Anonymous user deleted successfully", 32);
+      } catch (error) {
+        res.json({
+          result: false,
+          errorMsg: `Error while deleting anonymous account ${anonymousUID}`,
+        });
+        return;
+      }
+      // 1.b) ... remove anonymous account in firebase ...
+      try {
+        await FirebaseAdmin.auth().deleteUser(anonymousUID);
+        Util.msg("Anonymous user deleted successfully in Firebase", 32);
+      } catch (error) {
+        Util.warning("Anonymous user not deleted", 31);
+      }
+
+      // 1.c) ... than , returns the existing firebase account (Google, Facebook, etc.)
+      res.json({ result: true, data: existingUserWithFirebaseUID });
+      return;
+    } else if (policy == POLICIES.KEEP_ANONYMOUS) {
+      deleteFirebaseUser = true;
+    } else {
+      Util.error("Unknown policy : ", policy);
+      res.json({
+        result: false,
+        errorMsg: "Unknown policy in desanonymateAccount",
       });
       return;
     }
@@ -293,20 +410,36 @@ router.post("/desanonymateAccount", async (req, res) => {
     // Remove obsolete anonymous account in firebase
     try {
       await FirebaseAdmin.auth().deleteUser(anonymousUID);
-      Util.msg("Anonymous user deleted successfully", 32);
+      Util.msg("Anonymous user deleted successfully in Firebase", 32);
     } catch (error) {
       Util.warning("Anonymous user not deleted", 31);
     }
 
+    // In the policy = keepAnonymous, the previous firebase user is deleted
+    if (deleteFirebaseUser) {
+      try {
+        await User.findOneAndDelete({ firebaseUID: firebaseUID });
+      } catch (error) {
+        Util.error("Error while deleting previous firebase account", 31);
+        res.json({
+          result: false,
+          errorMsg: "Error while deleting previous firebase account",
+        });
+        return;
+      }
+    }
+
+    // Did si policy = keepFirebase, than udpateUser is null !!!!!
     res.json({ result: true, data: updatedUser });
   } catch (error) {
     const errorMessage = error.message
       ? error.message
       : "in updating a user in Firebase";
     console.error(error);
-    res.json({ result: false, error: errorMessage });
+    res.json({ result: false, errorMsg: errorMessage });
     return;
   }
+  // END MY_VERSION
 });
 
 //===============================================================
