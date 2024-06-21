@@ -33,4 +33,22 @@ module.exports.sleep = function (ms, text = "") {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-// module.exports = { showObject, myprint };
+module.exports.catchError = (res, internalError, userError = "") => {
+  let fullErrorMsg = "";
+
+  if (userError) {
+    fullErrorMsg = userError;
+  }
+
+  if (internalError.message) {
+    if (fullErrorMsg.length > 0) fullErrorMsg += "\n";
+    fullErrorMsg += internalError.message;
+  }
+
+  console.log(fullErrorMsg);
+
+  res.json({
+    result: false,
+    errorMsg: fullErrorMsg,
+  });
+};

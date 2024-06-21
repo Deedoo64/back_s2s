@@ -1,16 +1,17 @@
 const mongoose = require("mongoose");
+const { keyNameSchema } = require("./keyName"); // Importez spécifiquement le schéma
 
-// Schéma interne pour Key-Value
-const keyNameSchema = new mongoose.Schema({
-  key: {
-    type: String,
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-  },
-});
+// // Schéma interne pour Key-Value
+// const keyNameSchema = new mongoose.Schema({
+//   key: {
+//     type: String,
+//     required: true,
+//   },
+//   name: {
+//     type: String,
+//     required: true,
+//   },
+// });
 
 // Schéma interne pour Key-Value
 const quantitySchema = new mongoose.Schema({

@@ -10,8 +10,8 @@ const iaSchema = mongoose.Schema({
 const subscriptionSchema = mongoose.Schema({
   type: {
     type: String,
-    enum: ["free", "silver", "gold"],
-    default: "free",
+    enum: ["Free", "Silver", "Gold"],
+    default: "Free",
   },
   startDate: {
     type: Date,
@@ -21,13 +21,10 @@ const subscriptionSchema = mongoose.Schema({
 });
 
 const userSchema = mongoose.Schema({
-  firstname: String,
-  lastname: String,
   nickname: String,
   email: String,
   password: String,
   token: String,
-  autoLogin: Boolean,
   firebaseUID: String, // For user Google, Facebook or Anonyme
   ia: iaSchema,
   subscription: subscriptionSchema,
@@ -35,6 +32,11 @@ const userSchema = mongoose.Schema({
     type: String,
     enum: ["Google", "Facebook", "Anonymous", "Email"], // Make consistent with UserSource in front-end
     default: "Email",
+  },
+  plan: {
+    type: String,
+    enum: ["free", "silver", "gold"],
+    default: "free",
   },
 });
 
