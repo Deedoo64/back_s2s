@@ -137,4 +137,55 @@ router.delete("/articles", async (req, res) => {
   }
 });
 
+//===============================================================
+// PUT : Route pour mettre à jour une liste d'articles dans une shoppingList existante
+//===============================================================
+router.put("/articles", async (req, res) => {
+  const { articles, userId, name = "Default" } = req.body; // Utilise "Default" comme valeur par défaut pour le nom
+  console.log("in PUT /shoppingList/articles => userId:", userId);
+
+  const checkStatus = checkBody(req.body, ["articles", "userId", "name"]);
+  if (!checkStatus.status) {
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+
+  try {
+    // Chercher la liste de courses pour l'utilisateur
+    let shoppingList = await ShoppingList.findOne({ userId: userId, name });
+    if (!shoppingList) {
+      return res.json({ result: false, errorMsg: "Shopping list not found." });
+    }
+
+    // Mettre à jour chaque article dans la liste des articles
+    for (const updatedArticle of articles) {
+      const index = shoppingList.articles.findIndex(
+        (article) => article._id.toString() === updatedArticle._id
+      );
+      if (index !== -1) {
+        shoppingList.articles[index] = {
+          ...shoppingList.articles[index],
+          ...updatedArticle,
+        };
+      } else {
+        // Optionnel : Ajouter un nouvel article s'il n'existe pas déjà dans la liste
+        shoppingList.articles.push({
+          ...updatedArticle,
+          _id: new mongoose.Types.ObjectId(),
+        });
+      }
+    }
+
+    // Sauvegarder les modifications
+    await shoppingList.save();
+
+    res.json({ result: true, data: shoppingList.articles });
+  } catch (error) {
+    return Util.catchError(
+      res,
+      error,
+      "Error while updating articles in shoppingList"
+    );
+  }
+});
 module.exports = router;
