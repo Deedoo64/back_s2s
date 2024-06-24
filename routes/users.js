@@ -3,7 +3,7 @@ var router = express.Router();
 
 const Util = require("../util/util");
 const User = require("../models/users");
-const FirebaseAdmin = require("../modules/firebase");
+const { FirebaseAdmin, firebaseInitialized } = require("../modules/firebase");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
@@ -169,6 +169,13 @@ router.get("/:id", async (req, res) => {
 // GET : /fromFirebase : Retrieve user info from firebase user
 //===============================================================
 router.get("/fromFirebase/:firebaseUID", async (req, res) => {
+  if (!firebaseInitialized) {
+    return res.json({
+      result: false,
+      errorMsg: "Firebase not initialized in backend",
+    });
+  }
+
   const firebaseUID = req.params.firebaseUID;
 
   console.log("In route GET : /users/fromFirebase");
@@ -200,6 +207,13 @@ router.get("/fromFirebase/:firebaseUID", async (req, res) => {
 //===============================================================
 router.post("/fromFirebase", async (req, res) => {
   console.log("/fromFirebase : req.body : ", req.body);
+  if (!firebaseInitialized) {
+    return res.json({
+      result: false,
+      errorMsg: "Firebase not initialized in backend",
+    });
+  }
+
   const checkStatus = checkBody(req.body, ["id", "source"]);
   const { firebaseUID, displayName, email, source } = req.body;
 
@@ -244,6 +258,12 @@ const POLICIES = {
 //===============================================================
 router.post("/desanonymateAccount", async (req, res) => {
   console.log("/desanonymateAccount : req.body : ", req.body);
+  if (!firebaseInitialized) {
+    return res.json({
+      result: false,
+      errorMsg: "Firebase not initialized in backend",
+    });
+  }
 
   const checkStatus = checkBody(req.body, [
     "firebaseUID",
@@ -295,10 +315,11 @@ router.post("/desanonymateAccount", async (req, res) => {
               data: existingUserWithFirebaseUID,
             });
           } catch (error) {
-            return res.json({
-              result: false,
-              errorMsg: `Error while deleting anonymous account ${anonymousUID}`,
-            });
+            return Util.catchError(
+              res,
+              error,
+              `Error while deleting anonymous account ${anonymousUID}`
+            );
           }
 
         case POLICIES.KEEP_ANONYMOUS:

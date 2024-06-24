@@ -2,6 +2,18 @@ const FirebaseAdmin = require("firebase-admin");
 
 let firebaseInitialized = false;
 
+if (!process.env.FIREBASE_PROJECT_ID) {
+  console.error("Please set the FIREBASE_PROJECT_ID environment variable");
+}
+
+if (!process.env.FIREBASE_PRIVATE_KEY) {
+  console.error("Please set the FIREBASE_PRIVATE_KEY environment variable");
+}
+
+if (!process.env.FIREBASE_CLIENT_EMAIL) {
+  console.error("Please set the FIREBASE_CLIENT_EMAIL environment variable");
+}
+
 try {
   FirebaseAdmin.initializeApp({
     credential: FirebaseAdmin.credential.cert({
@@ -35,4 +47,4 @@ try {
   firebaseInitialized = false;
 }
 
-module.exports = FirebaseAdmin;
+module.exports = { FirebaseAdmin, firebaseInitialized };
