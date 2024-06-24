@@ -2,6 +2,9 @@ const FirebaseAdmin = require("firebase-admin");
 
 let firebaseInitialized = false;
 
+console.log("Initializing Firebase ...");
+console.log("FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
+
 if (!process.env.FIREBASE_PROJECT_ID) {
   console.error("Please set the FIREBASE_PROJECT_ID environment variable");
 }
