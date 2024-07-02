@@ -10,6 +10,22 @@ const bcrypt = require("bcrypt");
 const { refreshToken } = require("firebase-admin/app");
 
 //===============================================================
+// GET:/test/user : Test si un utilisateur existe via son email
+//===============================================================
+router.get("/test/:email", async (req, res) => {
+  const email = req.params.email;
+  console.log("In route GET:/test/:email : email : ", email);
+
+  const emailExists = await User.findOne({ email });
+  if (emailExists) {
+    console.log("User exists with email : ", email);
+    res.json({ result: true, data: emailExists });
+    return;
+  }
+
+  res.json({ result: false, errorMsg: "User not found with email : " + email });
+});
+//===============================================================
 // POST : signup
 //===============================================================
 router.post("/signup", async (req, res) => {
