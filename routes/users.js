@@ -13,7 +13,7 @@ const { refreshToken } = require("firebase-admin/app");
 // POST : signup
 //===============================================================
 router.post("/signup", async (req, res) => {
-  console.log("/signup1 : req.body : ", req.body);
+  // console.log("/signup : req.body : ", req.body);
   const checkStatus = checkBody(req.body, ["nickname", "email", "password"]);
   if (!checkStatus.status) {
     console.log("1 : checkStatus.error : ", checkStatus.error);
@@ -23,12 +23,12 @@ router.post("/signup", async (req, res) => {
   const { nickname, email, password } = req.body;
 
   try {
-    const nicknameExists = await User.findOne({ nickname: nickname });
-    if (nicknameExists) {
-      console.log("2 : data != null");
-      res.json({ result: false, errorMsg: "Nickname already exists" });
-      return;
-    }
+    // const nicknameExists = await User.findOne({ nickname: nickname });
+    // if (nicknameExists) {
+    //   console.log("2 : data != null");
+    //   res.json({ result: false, errorMsg: "Nickname already exists" });
+    //   return;
+    // }
 
     const emailExists = await User.findOne({ email: email });
     if (emailExists) {
