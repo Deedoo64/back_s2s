@@ -92,11 +92,11 @@ router.post("/signin", async (req, res) => {
       res.json({ result: false, errorMsg: "Email not found" });
       return;
     }
-
-    if (!bcrypt.compareSync(req.body.password, user.password)) {
-      res.json({ result: false, errorMsg: "Wrong password" });
-      return;
-    }
+    // Do not check any more the password since it is checked in Firebase
+    // if (!bcrypt.compareSync(req.body.password, user.password)) {
+    //   res.json({ result: false, errorMsg: "Wrong password" });
+    //   return;
+    // }
 
     console.log("About to save : ", user);
 
