@@ -35,9 +35,87 @@ const { Unit } = require("../models/unit");
 //     });
 // });
 
-// router.get("/:nickname", (req, res) => {
-//   Util.print(` =============== GETAAA name: ${req.params.nickname}`, 34);
-// });
+// Return items without userId ou with an obsolete userId.
+const findItemsToClean = async () => {
+  try {
+    // Étape 1: Récupérer les items sans `userId`
+    const itemsWithoutUserId = await Item.find({ userId: { $exists: false } });
+
+    // Étape 2: Récupérer les items avec un `userId` invalide (non existant dans `Users`)
+    const itemsWithInvalidUserId = await Item.aggregate([
+      {
+        $lookup: {
+          from: "users", // La collection des utilisateurs
+          localField: "userId", // Champ userId dans Items
+          foreignField: "_id", // Correspondre à _id dans Users
+          as: "userInfo", // Stocker les résultats dans `userInfo`
+        },
+      },
+      {
+        $match: { userInfo: { $size: 0 } }, // Filtrer les items où il n'y a pas d'utilisateur correspondant
+      },
+    ]);
+
+    // Retourner les deux listes combinées
+    return {
+      itemsWithoutUserId,
+      itemsWithInvalidUserId,
+    };
+  } catch (error) {
+    throw new Error(
+      "Erreur lors de la récupération des items à nettoyer: " + error.message
+    );
+  }
+};
+
+router.get("/toClean", async (req, res) => {
+  try {
+    const { itemsWithoutUserId, itemsWithInvalidUserId } =
+      await findItemsToClean();
+    res.json({
+      result: true,
+      itemsWithoutUserId,
+      itemsWithInvalidUserId,
+    });
+    console.log(
+      "Found %d items without userId and %d items with invalid userId",
+      itemsWithoutUserId.length,
+      itemsWithInvalidUserId.length
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete("/toClean", async (req, res) => {
+  try {
+    const { itemsWithoutUserId, itemsWithInvalidUserId } =
+      await findItemsToClean();
+
+    // Suppression des items sans userId
+    const deleteWithoutUserId = await Item.deleteMany({
+      _id: { $in: itemsWithoutUserId.map((item) => item._id) },
+    });
+
+    // Suppression des items avec un userId invalide
+    const deleteWithInvalidUserId = await Item.deleteMany({
+      _id: { $in: itemsWithInvalidUserId.map((item) => item._id) },
+    });
+
+    res.json({
+      result: true,
+      deletedWithoutUserId: deleteWithoutUserId.deletedCount,
+      deletedWithInvalidUserId: deleteWithInvalidUserId.deletedCount,
+    });
+    console.log(
+      "Deleted %d items without userId and %d items with invalid userId",
+      deleteWithoutUserId.deletedCount,
+      deleteWithInvalidUserId.deletedCount
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // /* GET board listing. */
 router.get("/:id", async (req, res) => {
@@ -379,4 +457,5 @@ router.patch("/updateStorage", async (req, res) => {
   console.log("Update storageId: ", storageId);
   console.log("Update unitId: ", unitId);
 });
+
 module.exports = router;

@@ -3,6 +3,9 @@ var router = express.Router();
 
 const Util = require("../util/util");
 const User = require("../models/users");
+const Storage = require("../models/storage");
+const Item = require("../models/m_item");
+const ShoppingList = require("../models/shoppingList");
 const { FirebaseAdmin, firebaseInitialized } = require("../modules/firebase");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
@@ -595,4 +598,75 @@ router.post("/addTokens", async (req, res) => {
   }
 });
 
+//===============================================================
+// DELETE/<email> : delete users and all its data (used by IA)
+//===============================================================
+router.delete("/account/:email", async (req, res) => {
+  const email = req.params.email;
+  console.log("In route DELETE:/users/delete/:email : email : ", email);
+  var deletedItems = 0;
+  var deletedStorages = 0;
+  var deletedShoppingLists = 0;
+  var deletedFirebaseUser = "";
+
+  try {
+    // Cherche l'utilisateur par son email
+    var user = await User.findOne({ email: email });
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `User not found with email : ${email}`,
+      });
+      return;
+    }
+    console.log(`User : ${user} found.`);
+    // Supprimer tous les storages associés à cet utilisateur
+    var result = await Storage.deleteMany({ userId: user._id });
+    deletedStorages = result.deletedCount;
+    console.log(`${result.deletedCount} Storages deleted.`);
+
+    result = await Item.deleteMany({ userId: user._id });
+    deletedItems = result.deletedCount;
+    console.log(`${result.deletedCount} Items deleted.`);
+
+    result = await ShoppingList.deleteMany({ userId: user._id });
+    deletedShoppingLists = result.deletedCount;
+
+    // Recupere et supprime l'utilsateur Firebase si il est défini
+    var firebaseUser = null;
+    if (user.firebaseUID) {
+      firebaseUser = await FirebaseAdmin.auth().getUser(user.firebaseUID);
+      console.log("Firebase user found : ", user.firebaseUID);
+    } else console.log("No Firebase user defined for user : ", user.email);
+    // Supprimer l'utilisateur Firebase
+    if (firebaseUser) {
+      await FirebaseAdmin.auth().deleteUser(user.firebaseUID);
+      console.log("Firebase user deleted !!!!!!!!!!!");
+      deletedFirebaseUser = user.firebaseUID;
+    }
+
+    // Supprimer l'utilisateur MongoDB
+    user = await User.deleteOne({ email: email });
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `User not found with email : ${email}`,
+      });
+      return;
+    }
+    console.log("MongoDB user deleted : ", user);
+    // Créer un objet avec les données supprimées
+    // Nombre d'items, de stockage de user
+    const data = {
+      deletedItems,
+      deletedStorages,
+      deletedShoppingLists,
+      deleteFirebaseUser: deletedFirebaseUser,
+    };
+    res.json({ result: true, data });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, errorMsg: error.message });
+  }
+});
 module.exports = router;

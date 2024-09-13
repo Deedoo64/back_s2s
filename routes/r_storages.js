@@ -6,6 +6,91 @@ var router = express.Router();
 
 const Storage = require("../models/storage");
 
+// Return Storages without userId ou with an obsolete userId.
+const findStoragesToClean = async () => {
+  try {
+    // Étape 1: Récupérer les storages sans `userId`
+    const storagesWithoutUserId = await Storage.find({
+      userId: { $exists: false },
+    });
+
+    // Étape 2: Récupérer les storages avec un `userId` invalide (non existant dans `Users`)
+    const storagesWithInvalidUserId = await Storage.aggregate([
+      {
+        $lookup: {
+          from: "users", // La collection des utilisateurs
+          localField: "userId", // Champ userId dans Items
+          foreignField: "_id", // Correspondre à _id dans Users
+          as: "userInfo", // Stocker les résultats dans `userInfo`
+        },
+      },
+      {
+        $match: { userInfo: { $size: 0 } }, // Filtrer les storages où il n'y a pas d'utilisateur correspondant
+      },
+    ]);
+
+    // Retourner les deux listes combinées
+    return {
+      storagesWithoutUserId,
+      storagesWithInvalidUserId,
+    };
+  } catch (error) {
+    throw new Error(
+      "Erreur lors de la récupération des Storage à nettoyer: " + error.message
+    );
+  }
+};
+
+router.get("/toClean", async (req, res) => {
+  try {
+    const { storagesWithoutUserId, storagesWithInvalidUserId } =
+      await findStoragesToClean();
+    res.json({
+      result: true,
+      storagesWithoutUserId,
+      storagesWithInvalidUserId,
+    });
+    console.log(
+      "Found %d storages without userId and %d storages with invalid userId",
+      storagesWithoutUserId.length,
+      storagesWithInvalidUserId.length
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete("/toClean", async (req, res) => {
+  console.log("In the route storage to clean");
+  try {
+    const { storagesWithoutUserId, storagesWithInvalidUserId } =
+      await findStoragesToClean();
+
+    // Suppression des storages sans userId
+    const deleteWithoutUserId = await Storage.deleteMany({
+      _id: { $in: storagesWithoutUserId.map((item) => item._id) },
+    });
+
+    // Suppression des storages avec un userId invalide
+    const deleteWithInvalidUserId = await Storage.deleteMany({
+      _id: { $in: storagesWithInvalidUserId.map((item) => item._id) },
+    });
+
+    res.json({
+      result: true,
+      deletedWithoutUserId: deleteWithoutUserId.deletedCount,
+      deletedWithInvalidUserId: deleteWithInvalidUserId.deletedCount,
+    });
+    console.log(
+      "Deleted %d storages without userId and %d storages with invalid userId",
+      deleteWithoutUserId.deletedCount,
+      deleteWithInvalidUserId.deletedCount
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // /* GET board listing. */
 router.get("/:id", async (req, res) => {
   // For now, just send the fist board found in the database.

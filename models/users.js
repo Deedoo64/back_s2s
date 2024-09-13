@@ -20,25 +20,28 @@ const subscriptionSchema = mongoose.Schema({
   endDate: Date,
 });
 
-const userSchema = mongoose.Schema({
-  nickname: String,
-  email: String,
-  password: String,
-  token: String,
-  firebaseUID: String, // For user Google, Facebook or Anonyme
-  ia: iaSchema,
-  subscription: subscriptionSchema,
-  source: {
-    type: String,
-    enum: ["Google", "Facebook", "Anonymous", "Email"], // Make consistent with UserSource in front-end
-    default: "Email",
+const userSchema = mongoose.Schema(
+  {
+    nickname: String,
+    email: String,
+    password: String,
+    token: String,
+    firebaseUID: String, // For user Google, Facebook or Anonyme
+    ia: iaSchema,
+    subscription: subscriptionSchema,
+    source: {
+      type: String,
+      enum: ["Google", "Facebook", "Anonymous", "Email"], // Make consistent with UserSource in front-end
+      default: "Email",
+    },
+    plan: {
+      type: String,
+      enum: ["free", "silver", "gold"],
+      default: "free",
+    },
   },
-  plan: {
-    type: String,
-    enum: ["free", "silver", "gold"],
-    default: "free",
-  },
-});
+  { timestamps: true }
+); // Active les timestamps pour les nouvelles entrées
 
 const User = mongoose.model("Users", userSchema);
 
