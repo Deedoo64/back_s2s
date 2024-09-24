@@ -11,6 +11,7 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var itemsRouter = require("./routes/r_item");
 var storagesRouter = require("./routes/r_storages");
+var listRouter = require("./routes/r_list");
 var shoppingListRouter = require("./routes/shoppingList");
 
 const port = 3001;
@@ -31,6 +32,7 @@ app.use("/users", usersRouter);
 app.use("/items", itemsRouter);
 app.use("/storages", storagesRouter);
 app.use("/shoppingList", shoppingListRouter);
+app.use("/list", listRouter);
 
 console.log(`Server running on port ${port} ...`);
 app.listen(port);

@@ -1,12 +1,16 @@
 const mongoose = require("mongoose");
 
-const { keyNameSchema } = require("./keyName"); // Importez spécifiquement le schéma
+// const { keyNameSchema } = require("./keyName"); // Importez spécifiquement le schéma
+// const { quantitySchema } = require("./quantity"); // Importez spécifiquement le schéma
 
-const articleSchema = mongoose.Schema({
-  name: { type: String, required: true },
-  type: { type: keyNameSchema, required: false },
-  done: Boolean,
-});
+// const articleSchema = mongoose.Schema({
+//   name: { type: String, required: true },
+//   type: { type: keyNameSchema, required: false },
+//   quantity: { type: quantitySchema, required: false },
+//   done: Boolean,
+// });
+
+const { articleSchema } = require("./article"); // Importez spécifiquement le schéma
 
 const shoppingListSchema = mongoose.Schema({
   name: { type: String, required: true },
