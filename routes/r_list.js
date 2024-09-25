@@ -199,47 +199,35 @@ router.put("/entries", async (req, res) => {
     res.json({ result: false, errorMsg: checkStatus.error });
     return;
   }
-
   try {
     // Chercher la liste de courses pour l'utilisateur
-    let list = await List.findOne({ _id: listId });
-    if (!list) {
-      res.json({
-        result: false,
-        errorMsg: `Bad list id ${listId} while saving entries`,
-      });
-      return false;
-    }
+    const { list, entriesField } = await getListAndEntriesByListType(listId);
 
     // Mettre à jour chaque article dans la liste des articles
-    for (const updatedArticle of entries) {
-      const index = List.entries.findIndex(
-        (article) => article._id.toString() === updatedArticle._id
+    for (updatedEntry of entries) {
+      const index = entriesField.findIndex(
+        (article) => article._id.toString() === updatedEntry._id
       );
       if (index !== -1) {
-        shoppingList.articles[index] = {
-          ...shoppingList.articles[index],
-          ...updatedArticle,
+        entriesField[index] = {
+          ...entriesField[index],
+          ...updatedEntry,
         };
       } else {
         // Optionnel : Ajouter un nouvel article s'il n'existe pas déjà dans la liste
-        shoppingList.articles.push({
-          ...updatedArticle,
+        entriesField.push({
+          ...updatedEntry,
           _id: new mongoose.Types.ObjectId(),
         });
       }
     }
 
     // Sauvegarder les modifications
-    await shoppingList.save();
+    await list.save();
 
-    res.json({ result: true, data: shoppingList.articles });
+    res.json({ result: true, data: entries });
   } catch (error) {
-    return Util.catchError(
-      res,
-      error,
-      "Error while updating articles in shoppingList"
-    );
+    return Util.catchError(res, error, `Error while updating entries in list`);
   }
 });
 
