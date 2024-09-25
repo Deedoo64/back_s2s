@@ -141,7 +141,7 @@ router.post("/entries", async (req, res) => {
   }
 });
 //===============================================================
-// DEL : Route pour supprimer une liste de courses
+// DEL : Route pour supprimer des articles d'une liste
 //===============================================================
 router.delete("/articles", async (req, res) => {
   //   return res
@@ -162,9 +162,7 @@ router.delete("/articles", async (req, res) => {
     });
 
     if (!shoppingList) {
-      return res
-        .status(500)
-        .json({ result: false, errorMsg: "Shopping list not found." });
+      return res.json({ result: false, errorMsg: "Shopping list not found." });
     }
 
     // Supprimer les articles dont les ID se trouvent dans articlesIds
@@ -184,6 +182,41 @@ router.delete("/articles", async (req, res) => {
       error,
       `Error while deleting shoppingList ${name} for userId ${userId}:`
     );
+  }
+});
+
+//===============================================================
+// DEL : Route pour supprimer une liste de courses
+//===============================================================
+router.delete("/:listId", async (req, res) => {
+  const listId = req.params.listId;
+
+  try {
+    const list = await List.findById(listId);
+
+    if (!list) {
+      // La liste n'existe pas
+      return res.json({
+        result: false,
+        errorMsg: `List with id ${listId} not found`,
+      });
+    }
+
+    // 2. Supprimer la liste de courses
+    const result = await List.deleteOne({ _id: listId });
+
+    if (result.deletedCount === 0) {
+      // Aucune suppression n'a eu lieu, cela signifie que la liste n'existe plus
+      return res.json({
+        result: false,
+        errorMsg: `List with id ${listId} could not be deleted`,
+      });
+    }
+
+    // 3. Retourner la liste supprimée
+    res.json({ result: true, data: list });
+  } catch (error) {
+    return Util.catchError(res, error, `Error while deleting list ${listId}`);
   }
 });
 
