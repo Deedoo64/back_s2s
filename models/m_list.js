@@ -37,24 +37,26 @@ const shoppingEntrySchema = mongoose.Schema({
 });
 
 // Schéma principal pour les différentes listes
-const listSchema = new Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+const listSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
 
-  type: {
-    type: String,
-    enum: ["shopping", "todo", "check", "tracking"],
-    required: true,
-  }, // Type de la liste
-  name: { type: String, required: true }, // Nom de la liste
-  private: { type: Boolean, default: false }, // Visibilité de la liste
-  sortedBy: { type: String, default: "" }, // Tri un nom de champ
-  // entries: [{ type: Schema.Types.Mixed }], // Allow any of Item, Tracking or Shopping schema
-  checks: [checkEntryShema], // Pour shopping_list, todo_list, checklist
-  tasks: [taskEntrySchema],
-  trackings: [trackingEntrySchema], // Pour tracking_list
-  shoppings: [shoppingEntrySchema],
-  created_at: { type: Date, default: Date.now }, // Date de création de la liste
-});
+    type: {
+      type: String,
+      enum: ["shopping", "todo", "check", "tracking"],
+      required: true,
+    }, // Type de la liste
+    name: { type: String, required: true }, // Nom de la liste
+    private: { type: Boolean, default: false }, // Visibilité de la liste
+    sortedBy: { type: String, default: "" }, // Tri un nom de champ
+    // entries: [{ type: Schema.Types.Mixed }], // Allow any of Item, Tracking or Shopping schema
+    checks: [checkEntryShema], // Pour shopping_list, todo_list, checklist
+    tasks: [taskEntrySchema],
+    trackings: [trackingEntrySchema], // Pour tracking_list
+    shoppings: [shoppingEntrySchema],
+  },
+  { timestamps: true }
+);
 
 // Modèle Mongoose
 const List = mongoose.model("List", listSchema);
