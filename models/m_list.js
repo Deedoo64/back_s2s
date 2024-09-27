@@ -32,6 +32,7 @@ const shoppingEntrySchema = mongoose.Schema({
   name: { type: String, required: true },
   type: { type: keyNameSchema, required: false },
   quantity: { type: quantitySchema, required: false },
+  unitNb: { type: Number, required: false },
   done: { type: Boolean, default: false },
 });
 

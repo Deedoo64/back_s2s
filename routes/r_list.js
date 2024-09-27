@@ -102,7 +102,7 @@ router.post("/", (req, res) => {
 // POST : Route pour ajouter une liste d'articles à une shoppingList existante
 //===============================================================
 router.post("/entries", async (req, res) => {
-  const { entries, listId } = req.body; // Utilise "Default" comme valeur par défaut pour le nom
+  const { entries, listId } = req.body;
   console.log("in POST /list/entries/   in listId => ", listId);
 
   const checkStatus = checkBody(req.body, ["entries", "listId"]);
@@ -112,76 +112,68 @@ router.post("/entries", async (req, res) => {
   }
 
   try {
-    const { list, entriesField } = await getListAndEntriesByListType(listId);
+    // Utilisation de la fonction générique pour récupérer la liste et le nom du champ d'entrées
+    const { list, FN } = await findListAndEntriesFieldName(listId);
 
-    console.log("List and entries found:", list, entriesField);
-    // Enregistrer chaque article dans la base de données et récupérer l'ID généré
-    // const entriesWithId = [];
-    // for (const entry of entries) {
-    //   console.log("Adding article : ", entry);
-    //   const newShopping = { ...entry, _id: new mongoose.Types.ObjectId() };
-    //   list.shoppings.push(newShopping);
-    //   entriesWithId.push(newShopping);
-    // }
+    // console.log("List and entries found:", list, entriesFieldName);
+
     const entriesWithId = [];
     for (const entry of entries) {
-      // Validation ici avec mongoose
-      const newShopping = { ...entry, _id: new mongoose.Types.ObjectId() };
-      entriesField.push(newShopping);
-      entriesWithId.push(newShopping);
+      // Ajouter chaque entrée avec un nouvel ID généré par Mongoose
+      const newEntry = { ...entry, _id: new mongoose.Types.ObjectId() };
+      list[FN].push(newEntry); // Ajouter l'entrée dans le bon champ
+      entriesWithId.push(newEntry);
     }
-    console.log("Before to save entries");
-    // Sauvegarder les modifications
-    await list.save();
-    console.log("After to save entries");
 
-    res.json({ result: true, data: entriesWithId }); // Ajouter la clé "data" avec le tableau "articlesWithIds"
+    // Sauvegarder la liste avec les nouvelles entrées
+    await list.save();
+    console.log("New entries : ", entriesWithId);
+
+    // Retourner la réponse avec les entrées ajoutées
+    res.json({ result: true, data: entriesWithId });
   } catch (error) {
     return Util.catchError(res, error, "Error while adding entries to list");
   }
 });
-//===============================================================
-// DEL : Route pour supprimer des articles d'une liste
-//===============================================================
-router.delete("/articles", async (req, res) => {
-  //   return res
-  //     .status(500)
-  //     .json({ result: false, errorMsg: "Shopping list not found." });
-  const { userId, articlesIds, name = "Default" } = req.body; // Utilise "Default" comme valeur par défaut pour le nom
 
-  const checkStatus = checkBody(req.body, ["articlesIds", "userId", "name"]);
+//===============================================================
+// DEL : Route pour supprimer des entries d'une liste
+//===============================================================
+router.delete("/entries", async (req, res) => {
+  const { listId, entriesIds } = req.body;
+
+  const checkStatus = checkBody(req.body, ["listId", "entriesIds"]);
   if (!checkStatus.status) {
     res.json({ result: false, errorMsg: checkStatus.error });
     return;
   }
 
   try {
-    const shoppingList = await ShoppingList.findOne({
-      userId: userId,
-      name: name,
-    });
+    // Obtenir la liste et le champ d'entrées correspondant au type
+    let { list, FN } = await findListAndEntriesFieldName(listId);
 
-    if (!shoppingList) {
-      return res.json({ result: false, errorMsg: "Shopping list not found." });
-    }
+    console.log("List and entries found:", list, FN);
 
-    // Supprimer les articles dont les ID se trouvent dans articlesIds
-    shoppingList.articles = shoppingList.articles.filter(
-      (article) => !articlesIds.includes(article._id.toString())
+    // Récupérer la longueur initiale du tableau d'entrées
+    const initialCount = list[FN].length;
+
+    // Filtrer les entrées à supprimer selon les IDs donnés
+    list[FN] = list[FN].filter(
+      (entry) => !entriesIds.includes(entry._id.toString())
     );
 
-    shoppingList.updated_at = new Date();
+    // Sauvegarder la liste après suppression des entrées
+    const savedList = await list.save();
+    console.log("Saved List:", savedList);
 
-    // Save the changes
-    await shoppingList.save();
+    // Calculer le nombre d'entrées supprimées
+    const deletedCount = initialCount - list[FN].length;
+    console.log("Deleted count: ", deletedCount);
 
-    res.json({ result: true, data: shoppingList });
+    // Retourner le résultat de la suppression
+    res.json({ result: true, data: { deletedCount } });
   } catch (error) {
-    return Util.catchError(
-      res,
-      error,
-      `Error while deleting shoppingList ${name} for userId ${userId}:`
-    );
+    return Util.catchError(res, error, `Error while deleting entries in list`);
   }
 });
 
@@ -224,7 +216,7 @@ router.delete("/:listId", async (req, res) => {
 // PUT : Route pour mettre à jour une liste d'articles dans une shoppingList existante
 //===============================================================
 router.put("/entries", async (req, res) => {
-  const { entries, listId } = req.body; // Utilise "Default" comme valeur par défaut pour le nom
+  const { entries, listId } = req.body;
   console.log("in PUT /list/entries/   in listId => ", listId);
 
   const checkStatus = checkBody(req.body, ["entries", "listId"]);
@@ -232,30 +224,33 @@ router.put("/entries", async (req, res) => {
     res.json({ result: false, errorMsg: checkStatus.error });
     return;
   }
-  try {
-    // Chercher la liste de courses pour l'utilisateur
-    const { list, entriesField } = await getListAndEntriesByListType(listId);
 
-    // Mettre à jour chaque article dans la liste des articles
-    for (updatedEntry of entries) {
-      const index = entriesField.findIndex(
-        (article) => article._id.toString() === updatedEntry._id
+  try {
+    // Utilisation de la fonction générique pour récupérer la liste et le champ des entrées
+    const { list, FN } = await findListAndEntriesFieldName(listId);
+
+    // Mettre à jour chaque entrée dans le champ d'entrées correspondant
+    for (const updatedEntry of entries) {
+      const index = list[FN].findIndex(
+        (entry) => entry._id.toString() === updatedEntry._id
       );
+
       if (index !== -1) {
-        entriesField[index] = {
-          ...entriesField[index],
+        // Mise à jour de l'entrée existante
+        list[FN][index] = {
+          ...list[FN][index],
           ...updatedEntry,
         };
       } else {
-        // Optionnel : Ajouter un nouvel article s'il n'existe pas déjà dans la liste
-        entriesField.push({
+        // Si l'entrée n'existe pas encore, on l'ajoute
+        list[FN].push({
           ...updatedEntry,
           _id: new mongoose.Types.ObjectId(),
         });
       }
     }
 
-    // Sauvegarder les modifications
+    // Sauvegarder la liste avec les modifications
     await list.save();
 
     res.json({ result: true, data: entries });
@@ -264,8 +259,9 @@ router.put("/entries", async (req, res) => {
   }
 });
 
-// Fonction pour récupérer la liste et ses entrées en fonction du type de liste
-const getListAndEntriesByListType = async (listId) => {
+// // Fonction pour récupérer la liste et ses entrées en fonction du type de liste
+// //===============================================================
+const findListAndEntriesFieldName = async (listId) => {
   try {
     // Rechercher la liste par son identifiant
     const list = await List.findById(listId).exec();
@@ -274,32 +270,31 @@ const getListAndEntriesByListType = async (listId) => {
       throw new Error(`No list found with id ${listId}`);
     }
 
-    let entriesField;
+    let FN;
 
-    // Vérifier le type de la liste et assigner les bonnes entrées
+    // Vérifier le type de la liste et assigner la référence à la bonne propriété d'entrées
     switch (list.type) {
       case "shopping":
-        entriesField = list.shoppings; // Récupérer les articles de la liste de courses
+        FN = "shoppings"; // Récupérer les articles de la liste de courses
         break;
       case "todo":
-        entriesField = list.tasks; // Récupérer les tâches pour todo_list
+        FN = "tasks"; // Récupérer les tâches pour todo_list
         break;
       case "check":
-        entriesField = list.checks; // Récupérer les items pour checklist
+        FN = "checks"; // Récupérer les items pour checklist
         break;
       case "tracking":
-        entriesField = list.trackings; // Récupérer les entrées de suivi pour tracking list
+        FN = "trackings"; // Récupérer les entrées de suivi pour tracking list
         break;
       default:
         throw new Error(`Unknown list type ${list.type}`);
     }
 
-    // Retourner la liste et les entrées
-    return { list, entriesField };
+    // Retourner la liste et le nom du champ d'entrées
+    return { list, FN };
   } catch (error) {
     console.error("Error while getting entries:", error);
     throw error; // Relever l'erreur pour gestion en amont
   }
 };
-
 module.exports = router;
