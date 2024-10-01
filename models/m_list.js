@@ -21,11 +21,19 @@ const taskEntrySchema = new Schema({
   added_at: { type: Date, default: Date.now }, // Date d'ajout (pour shopping_list)
 });
 
+const trackingDefSchema = new Schema({
+  name: { type: String, required: false },
+  type: { type: String, enum: ["integer", "floating", "boolean"] }, // Sync with frontend TrackingType
+  unit: { type: String },
+});
 // Schéma pour les métriques/temps
 const trackingEntrySchema = new Schema({
-  date: { type: Date, required: true }, // Date de la mesure
-  value: { type: Number, required: true }, // Valeur (ex : poids, durée)
-  unit: { type: String }, // Unité de mesure (ex : kg, secondes)
+  values: [
+    {
+      date: { type: Date, required: true }, // Date de l'entrée
+      value: { type: mongoose.Schema.Types.Mixed }, // Valeur (nombre, texte, date, etc.)
+    },
+  ],
 });
 
 const shoppingEntrySchema = mongoose.Schema({
@@ -49,7 +57,7 @@ const listSchema = new Schema(
     name: { type: String, required: true }, // Nom de la liste
     private: { type: Boolean, default: false }, // Visibilité de la liste
     sortedBy: { type: String, default: "" }, // Tri un nom de champ
-    // entries: [{ type: Schema.Types.Mixed }], // Allow any of Item, Tracking or Shopping schema
+    trackingDef: { type: trackingDefSchema, required: false },
     checks: [checkEntryShema], // Pour shopping_list, todo_list, checklist
     tasks: [taskEntrySchema],
     trackings: [trackingEntrySchema], // Pour tracking_list

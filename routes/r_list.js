@@ -18,19 +18,6 @@ router.get("/:userId", async (req, res) => {
     let lists = await List.find({ userId: userId });
     console.log(`Found ${lists.length} lists for user ${userId}`);
 
-    // if (lists.length === 0) {
-    //   // Si aucune liste n'est trouvée, créer une nouvelle liste par défaut
-    //   const defaultShoppingList = new ShoppingList({
-    //     name: "Default",
-    //     userId: userId,
-    //     note: "",
-    //     articles: [],
-    //   });
-
-    //   await defaultShoppingList.save();
-    //   lists.push(defaultShoppingList);
-    // }
-
     res.json({
       result: true,
       data: lists,
@@ -55,21 +42,15 @@ router.post("/", (req, res) => {
   //   errorMsg: "Simulate error in POST item",
   // });
 
-  var list = req.body;
+  var listBody = req.body;
   console.log("------------------- POST --------------------");
-  console.log(list);
+  console.log(listBody);
 
-  console.log("Save list connected to User : ", list.userId);
-
-  const newList = new List({
-    name: list.name,
-    type: list.type,
-    userId: list.userId,
-  });
-
-  console.log("Just before to save ...");
+  console.log("Save list connected to User : ", listBody.userId);
 
   console.log("");
+
+  const newList = new List(listBody);
 
   List.validate(newList)
     .then((validatedObject) => {
@@ -182,6 +163,8 @@ router.delete("/entries", async (req, res) => {
 //===============================================================
 router.delete("/:listId", async (req, res) => {
   const listId = req.params.listId;
+
+  console.log("About to delete list with id : ", listId);
 
   try {
     const list = await List.findById(listId);
