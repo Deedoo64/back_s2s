@@ -35,20 +35,14 @@ router.get("/:userId", async (req, res) => {
 // POST : / Add a new list
 //===============================================================
 router.post("/", (req, res) => {
-  console.log("In route item/POST");
-
   // return res.status(500).json({
   //   result: false,
   //   errorMsg: "Simulate error in POST item",
   // });
 
   var listBody = req.body;
-  console.log("------------------- POST --------------------");
+  console.log("------------------- POST list/------------------");
   console.log(listBody);
-
-  console.log("Save list connected to User : ", listBody.userId);
-
-  console.log("");
 
   const newList = new List(listBody);
 
@@ -60,6 +54,7 @@ router.post("/", (req, res) => {
         .save()
         .then((data) => {
           console.log("\u001b[33mRequest succeed ! \u001b[0m");
+          console.log("res.jon : data : ", data);
           res.json({ result: true, data: data });
         })
         .catch((error) => {
@@ -84,7 +79,14 @@ router.post("/", (req, res) => {
 //===============================================================
 router.post("/entries", async (req, res) => {
   const { entries, listId } = req.body;
-  console.log("in POST /list/entries/   in listId => ", listId);
+  console.log(
+    " =========== POST /list/entries/ =========  in listId => ",
+    listId
+  );
+
+  console.log("Entries to add : ", req.body.entries.length);
+
+  console.log(req.body.entries);
 
   const checkStatus = checkBody(req.body, ["entries", "listId"]);
   if (!checkStatus.status) {
@@ -103,11 +105,13 @@ router.post("/entries", async (req, res) => {
       // Ajouter chaque entrée avec un nouvel ID généré par Mongoose
       const newEntry = { ...entry, _id: new mongoose.Types.ObjectId() };
       list[FN].push(newEntry); // Ajouter l'entrée dans le bon champ
+      console.log("Add entry : \n", newEntry);
       entriesWithId.push(newEntry);
     }
 
     // Sauvegarder la liste avec les nouvelles entrées
-    await list.save();
+    const savedList = await list.save();
+    console.log("Saved list : ", savedList);
     console.log("New entries : ", entriesWithId);
 
     // Retourner la réponse avec les entrées ajoutées

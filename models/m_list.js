@@ -25,15 +25,12 @@ const trackingDefSchema = new Schema({
   name: { type: String, required: false },
   type: { type: String, enum: ["integer", "floating", "boolean"] }, // Sync with frontend TrackingType
   unit: { type: String },
+  ref: { type: String, enum: ["date", "dateAndTime", "number"] },
 });
 // Schéma pour les métriques/temps
 const trackingEntrySchema = new Schema({
-  values: [
-    {
-      date: { type: Date, required: true }, // Date de l'entrée
-      value: { type: mongoose.Schema.Types.Mixed }, // Valeur (nombre, texte, date, etc.)
-    },
-  ],
+  date: { type: Date, required: true }, // Date de l'entrée
+  value: { type: mongoose.Schema.Types.Mixed }, // Valeur (nombre, texte, date, etc.)
 });
 
 const shoppingEntrySchema = mongoose.Schema({
