@@ -31,6 +31,7 @@ const trackingDefSchema = new Schema({
 const trackingEntrySchema = new Schema({
   date: { type: Date, required: true }, // Date de l'entrée
   value: { type: mongoose.Schema.Types.Mixed }, // Valeur (nombre, texte, date, etc.)
+  done: { type: Boolean, default: true },
 });
 
 const shoppingEntrySchema = mongoose.Schema({
@@ -51,6 +52,7 @@ const listSchema = new Schema(
       enum: ["shopping", "todo", "check", "tracking"],
       required: true,
     }, // Type de la liste
+    autocompleteToken: { type: String, required: false },
     name: { type: String, required: true }, // Nom de la liste
     private: { type: Boolean, default: false }, // Visibilité de la liste
     sortedBy: { type: String, default: "" }, // Tri un nom de champ

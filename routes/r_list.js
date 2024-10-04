@@ -75,6 +75,72 @@ router.post("/", (req, res) => {
 });
 
 //===============================================================
+// PUT : /list Save an existing list
+//===============================================================
+router.put("/", async (req, res) => {
+  // return res.status(500).json({
+  //   result: false,
+  //   errorMsg: "Simulate error in POST item",
+  // });
+
+  var listBody = req.body;
+  console.log("------------------- PUT list/------------------");
+  console.log(listBody);
+
+  var id = req.body._id;
+  try {
+    const updatedList = await List.findByIdAndUpdate(
+      id,
+      listBody, // On utilise l'objet entier reçu
+      { new: true, runValidators: true } // `new: true` pour retourner le document mis à jour
+    );
+
+    if (!updatedList) {
+      return res.status(500).json({
+        result: false,
+        errorMsg: `Can not find list with id ${id}`,
+      });
+    }
+    res.json({ result: true, data: updatedList });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      result: false,
+      errorMsg: error.message ? error.message : "Error in MongoDB save",
+    });
+  }
+
+  // const newList = new List(listBody);
+
+  // List.validate(newList)
+  //   .then((validatedObject) => {
+  //     console.log("Objet valide :", validatedObject);
+
+  //     newList
+  //       .save()
+  //       .then((data) => {
+  //         console.log("\u001b[33mRequest succeed ! \u001b[0m");
+  //         console.log("res.jon : data : ", data);
+  //         res.json({ result: true, data: data });
+  //       })
+  //       .catch((error) => {
+  //         console.error(error);
+  //         res.json({
+  //           result: false,
+  //           errorMsg: error.message ? error.message : "Error in MongoDB save",
+  //         });
+  //       });
+  //   })
+  //   .catch((validationError) => {
+  //     console.error("Erreur de validation :", validationError.errors);
+  //     res.json({
+  //       result: false,
+  //       errorMsg: "Item dooes not match the schema. " + validationError.errors,
+  //     });
+  //   });
+});
+
+//===============================================================
 // POST : Route pour ajouter une liste d'articles à une shoppingList existante
 //===============================================================
 router.post("/entries", async (req, res) => {
@@ -207,6 +273,8 @@ router.put("/entries", async (req, res) => {
   console.log("in PUT /list/entries/   in listId => ", listId);
 
   const checkStatus = checkBody(req.body, ["entries", "listId"]);
+  // console.log("Entries", entries);
+
   if (!checkStatus.status) {
     res.json({ result: false, errorMsg: checkStatus.error });
     return;
