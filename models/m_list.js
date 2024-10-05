@@ -52,7 +52,8 @@ const listSchema = new Schema(
       enum: ["shopping", "todo", "check", "tracking"],
       required: true,
     }, // Type de la liste
-    autocompleteToken: { type: String, required: false },
+    note: { type: String, required: false },
+    addToAutocomplete: { type: Boolean, required: false, default: true },
     name: { type: String, required: true }, // Nom de la liste
     private: { type: Boolean, default: false }, // Visibilité de la liste
     sortedBy: { type: String, default: "" }, // Tri un nom de champ
