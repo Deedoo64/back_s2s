@@ -7,17 +7,17 @@ const { quantitySchema } = require("./quantity");
 // Schéma commun pour les items d'une liste
 const checkEntryShema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
-  done: { type: Boolean, default: false }, // Statut (pour checklist ou todo_list)
-  due_date: { type: Date }, // Date limite (pour todo_list)
-  priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour todo_list)
+  done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
+  due_date: { type: Date }, // Date limite (pour task_list)
+  priority: { type: String, enum: ["low", "medium", "high"] },
 });
 
 // Schéma commun pour les items d'une liste
 const taskEntrySchema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
-  done: { type: Boolean, default: false }, // Statut (pour checklist ou todo_list)
-  due_date: { type: Date }, // Date limite (pour todo_list)
-  priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour todo_list)
+  done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
+  due_date: { type: Date }, // Date limite (pour task_list)
+  priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour task_list)
   added_at: { type: Date, default: Date.now }, // Date d'ajout (pour shopping_list)
 });
 
@@ -49,7 +49,7 @@ const listSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["shopping", "todo", "check", "tracking"],
+      enum: ["shopping", "task", "check", "tracking"],
       required: true,
     }, // Type de la liste
     note: { type: String, required: false },
@@ -58,7 +58,7 @@ const listSchema = new Schema(
     private: { type: Boolean, default: false }, // Visibilité de la liste
     sortedBy: { type: String, default: "" }, // Tri un nom de champ
     trackingDef: { type: trackingDefSchema, required: false },
-    checks: [checkEntryShema], // Pour shopping_list, todo_list, checklist
+    checks: [checkEntryShema], // Pour shopping_list, task_list, checklist
     tasks: [taskEntrySchema],
     trackings: [trackingEntrySchema], // Pour tracking_list
     shoppings: [shoppingEntrySchema],

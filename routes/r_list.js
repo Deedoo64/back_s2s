@@ -332,7 +332,7 @@ const findListAndEntriesFieldName = async (listId) => {
       case "shopping":
         FN = "shoppings"; // Récupérer les articles de la liste de courses
         break;
-      case "todo":
+      case "task":
         FN = "tasks"; // Récupérer les tâches pour todo_list
         break;
       case "check":
