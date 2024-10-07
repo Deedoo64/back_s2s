@@ -15,6 +15,7 @@ const checkEntryShema = new Schema({
 // Schéma commun pour les items d'une liste
 const taskEntrySchema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
+  description: { type: String, required: false },
   done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
   due_date: { type: Date }, // Date limite (pour task_list)
   priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour task_list)

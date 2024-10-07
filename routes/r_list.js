@@ -273,7 +273,7 @@ router.put("/entries", async (req, res) => {
   console.log("in PUT /list/entries/   in listId => ", listId);
 
   const checkStatus = checkBody(req.body, ["entries", "listId"]);
-  // console.log("Entries", entries);
+  console.log("Entries", entries);
 
   if (!checkStatus.status) {
     res.json({ result: false, errorMsg: checkStatus.error });
@@ -305,6 +305,7 @@ router.put("/entries", async (req, res) => {
       }
     }
 
+    // console.log("Real saved entries : ", entries);
     // Sauvegarder la liste avec les modifications
     await list.save();
 
