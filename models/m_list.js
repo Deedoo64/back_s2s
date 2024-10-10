@@ -8,7 +8,8 @@ const { quantitySchema } = require("./quantity");
 const checkEntryShema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
   done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
-  due_date: { type: Date }, // Date limite (pour task_list)
+  dueDate: { type: Date }, // Date limite (pour task_list)
+  position: { type: Number, required: true }, // To save entry position in manual sort
   priority: { type: String, enum: ["low", "medium", "high"] },
 });
 
@@ -17,7 +18,8 @@ const taskEntrySchema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
   description: { type: String, required: false },
   done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
-  due_date: { type: Date }, // Date limite (pour task_list)
+  dueDate: { type: Date }, // Date limite (pour task_list)
+  position: { type: Number, required: false }, // To save entry position in manual sort
   priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour task_list)
   added_at: { type: Date, default: Date.now }, // Date d'ajout (pour shopping_list)
 });
@@ -40,6 +42,7 @@ const shoppingEntrySchema = mongoose.Schema({
   type: { type: keyNameSchema, required: false },
   quantity: { type: quantitySchema, required: false },
   unitNb: { type: Number, required: false },
+  position: { type: Number, required: true }, // To save entry position in manual sort
   done: { type: Boolean, default: false },
 });
 

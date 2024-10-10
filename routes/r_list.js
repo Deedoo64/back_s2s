@@ -168,6 +168,15 @@ router.post("/entries", async (req, res) => {
 
     const entriesWithId = [];
     for (const entry of entries) {
+      // Ensure to add a valide positon (end of entries) if position
+      // is not found
+      if (entry.position === undefined) {
+        const maxPosition = list[FN].reduce((max, currentEntry) => {
+          return currentEntry.position > max ? currentEntry.position : max;
+        }, 0);
+        entry.position = maxPosition + 10;
+      }
+
       // Ajouter chaque entrée avec un nouvel ID généré par Mongoose
       const newEntry = { ...entry, _id: new mongoose.Types.ObjectId() };
       list[FN].push(newEntry); // Ajouter l'entrée dans le bon champ

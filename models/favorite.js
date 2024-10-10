@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 
 // Schéma pour un élément favori stocké une seule fois
 const favoriteSchema = new Schema({
-  name: { type: String, required: true }, // Nom du favori
+  shoppingId: { type: String, required: true }, // Nom du favori
   description: { type: String }, // Description ou autres champs
 });
 
