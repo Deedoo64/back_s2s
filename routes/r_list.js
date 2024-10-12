@@ -8,7 +8,7 @@ const { List, ShoppingEntry } = require("../models/m_list");
 const mongoose = require("mongoose");
 
 //===============================================================
-// GET /:userId : Route pour récupérer la liste des listes
+// GET /:userId : Route pour récupérer toutes les liste du user
 //===============================================================
 router.get("/:userId", async (req, res) => {
   const userId = req.params.userId;
@@ -31,6 +31,36 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
+//===============================================================
+// GET /byId/:listId : Route pour récupérer une liste données
+//===============================================================
+router.get("/byId/:listId", async (req, res) => {
+  const listId = req.params.listId;
+
+  try {
+    // Chercher toutes les listes de courses pour l'utilisateur
+    let list = await List.findOne({ _id: listId });
+    console.log(`Found ${list}`);
+
+    if (list == null) {
+      return res.json({
+        result: false,
+        errorMsg: `Can not find list with id ${listId}`,
+      });
+    }
+
+    res.json({
+      result: true,
+      data: list,
+    });
+  } catch (error) {
+    return Util.catchError(
+      res,
+      error,
+      `Error while loading List with id ${listId}:`
+    );
+  }
+});
 //===============================================================
 // POST : / Add a new list
 //===============================================================
@@ -101,6 +131,11 @@ router.put("/", async (req, res) => {
         errorMsg: `Can not find list with id ${id}`,
       });
     }
+    // Force to update last updateAt of list since entries are only
+    // subdocument of List
+    updatedList.updatedAt = new Date();
+    await updatedList.save();
+
     res.json({ result: true, data: updatedList });
   } catch (error) {
     console.error(error);
@@ -165,12 +200,11 @@ router.post("/entries", async (req, res) => {
     const { list, FN } = await findListAndEntriesFieldName(listId);
 
     // console.log("List and entries found:", list, entriesFieldName);
-
     const entriesWithId = [];
     for (const entry of entries) {
       // Ensure to add a valide positon (end of entries) if position
       // is not found
-      if (entry.position === undefined) {
+      if (entry.position === undefined || entry.position == -1.0) {
         const maxPosition = list[FN].reduce((max, currentEntry) => {
           return currentEntry.position > max ? currentEntry.position : max;
         }, 0);
@@ -184,8 +218,11 @@ router.post("/entries", async (req, res) => {
       entriesWithId.push(newEntry);
     }
 
+    // Force to update last updateAt of list since entries are only
+    // subdocument of List
     // Sauvegarder la liste avec les nouvelles entrées
     const savedList = await list.save();
+    savedList.updatedAt = new Date();
     console.log("Saved list : ", savedList);
     console.log("New entries : ", entriesWithId);
 
