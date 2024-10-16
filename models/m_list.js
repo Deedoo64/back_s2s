@@ -4,6 +4,13 @@ const { keyNameSchema } = require("./keyName"); // Importez spécifiquement le s
 const { quantitySchema } = require("./quantity");
 // const { articleSchema } = require("./article");
 
+const alertSchema = new Schema({
+  delayBefore: { type: Number, required: false },
+  message: { type: String, required: true },
+  snooze: { type: Number, required: false },
+  flutterNotifId: { type: String, required: false },
+});
+
 // Schéma commun pour les items d'une liste
 const checkEntryShema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
@@ -21,6 +28,7 @@ const taskEntrySchema = new Schema({
   dueDate: { type: Date }, // Date limite (pour task_list)
   position: { type: Number, required: false }, // To save entry position in manual sort
   priority: { type: String, enum: ["low", "medium", "high"] }, // Priorité (pour task_list)
+  alerts: [alertSchema],
   added_at: { type: Date, default: Date.now }, // Date d'ajout (pour shopping_list)
 });
 

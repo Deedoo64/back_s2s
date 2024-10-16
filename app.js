@@ -12,6 +12,7 @@ var usersRouter = require("./routes/users");
 var itemsRouter = require("./routes/r_item");
 var storagesRouter = require("./routes/r_storages");
 var utilRouter = require("./routes/util");
+var preferencesRouter = require("./routes/r_preferences");
 
 var listRouter = require("./routes/r_list");
 var shoppingListRouter = require("./routes/shoppingList");
@@ -36,6 +37,7 @@ app.use("/storages", storagesRouter);
 app.use("/shoppingList", shoppingListRouter);
 app.use("/list", listRouter);
 app.use("/util", utilRouter);
+app.use("/preferences", preferencesRouter);
 
 console.log(`Server running on port ${port} ...`);
 app.listen(port);
