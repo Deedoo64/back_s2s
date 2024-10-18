@@ -6,7 +6,7 @@ const { quantitySchema } = require("./quantity");
 
 const alertSchema = new Schema({
   delayBefore: { type: Number, required: false },
-  message: { type: String, required: true },
+  message: { type: String, required: false },
   snooze: { type: Number, required: false },
   flutterNotifId: { type: String, required: false },
 });
