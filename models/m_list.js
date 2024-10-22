@@ -14,6 +14,7 @@ const alertSchema = new Schema({
 // Schéma commun pour les items d'une liste
 const checkEntryShema = new Schema({
   name: { type: String, required: true }, // Nom de l'article ou tâche
+  description: { type: String, required: false },
   done: { type: Boolean, default: false }, // Statut (pour checklist ou task_list)
   dueDate: { type: Date }, // Date limite (pour task_list)
   position: { type: Number, required: true }, // To save entry position in manual sort
