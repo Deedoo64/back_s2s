@@ -632,6 +632,7 @@ const auth = new google.auth.GoogleAuth({
 router.put("/getSubscriptionFromPlayStore", async (req, res) => {
   const { userId, productIds, purchaseToken } = req.body;
   console.log("/getSubscriptionFromPlayStore : req.body : ", req.body);
+  console.log("NODE_OPTIONS:", process.env.NODE_OPTIONS);
 
   try {
     var subscription = await getSubscription(purchaseToken, productIds);
@@ -671,9 +672,9 @@ async function getSubscription(purchaseToken, productIds) {
         token: purchaseToken,
       });
       const subscription2 = res2.data;
-      console.log("subscription2 :", JSON.stringify(subscription2, null, 2));
+      // console.log("subscription2 :", JSON.stringify(subscription2, null, 2));
       const subscriptionState = subscription2.subscriptionState;
-      console.log("subscriptionState: ", subscriptionState);
+      // console.log("subscriptionState: ", subscriptionState);
 
       // Déterminer si l'abonnement est suspendu
       const isSuspended =
