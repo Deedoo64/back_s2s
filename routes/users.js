@@ -12,6 +12,10 @@ const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 const { refreshToken } = require("firebase-admin/app");
 
+// Pour l'utilisation de Google Developer API
+const { google } = require("googleapis");
+const playDeveloperApi = google.androidpublisher("v3");
+
 //===============================================================
 // GET:/test/user : Test si un utilisateur existe via son email
 //===============================================================
@@ -598,6 +602,156 @@ router.post("/addTokens", async (req, res) => {
   }
 });
 
+/////////////////////////////////////////////////////////////////////
+//                            SUBSCRIPTION
+/////////////////////////////////////////////////////////////////////
+if (!process.env.GOOGLE_PLAY_DEV_API_KEY) {
+  console.error(
+    "Please set the GOOGLE_PLAY_DEV_API_KEY environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
+  );
+}
+if (!process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL) {
+  console.error(
+    "Please set the GOOGLE_PLAY_DEV_CLIENT_EMAIL environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
+  );
+}
+
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PLAY_DEV_API_KEY,
+  },
+  projectId: "foodstock-424310",
+  scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+});
+
+//===============================================================
+// PUT /getSubscriptionFromPlayStore
+// Return all subscriptions including expired ones
+//===============================================================
+router.put("/getSubscriptionFromPlayStore", async (req, res) => {
+  const { userId, productIds, purchaseToken } = req.body;
+  console.log("/getSubscriptionFromPlayStore : req.body : ", req.body);
+
+  try {
+    var subscription = await getSubscription(purchaseToken, productIds);
+    console.log(subscription);
+
+    res.json({
+      result: true,
+      data: subscription,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ result: false, errorMsg: error });
+    return;
+  }
+});
+
+async function getSubscription(purchaseToken, productIds) {
+  const androidpublisher = google.androidpublisher("v3");
+  const authClient = await auth.getClient();
+  const packageName = "com.minicom.foodstock"; // Remplacez par le nom de package de votre application
+  const purchaseTokens = [];
+
+  for (const subscriptionId of productIds) {
+    console.log(`Checking subscriptionId : ${subscriptionId}`);
+    try {
+      const res = await androidpublisher.purchases.subscriptions.get({
+        auth: authClient,
+        packageName: packageName,
+        subscriptionId: subscriptionId,
+        token: purchaseToken,
+      });
+      const subscription = res.data;
+
+      const res2 = await androidpublisher.purchases.subscriptionsv2.get({
+        auth: authClient,
+        packageName: packageName,
+        token: purchaseToken,
+      });
+      const subscription2 = res2.data;
+      console.log("subscription2 :", JSON.stringify(subscription2, null, 2));
+      const subscriptionState = subscription2.subscriptionState;
+      console.log("subscriptionState: ", subscriptionState);
+
+      // Déterminer si l'abonnement est suspendu
+      const isSuspended =
+        subscriptionState === "SUBSCRIPTION_STATE_PAUSED" ||
+        subscriptionState === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" ||
+        subscriptionState === "SUBSCRIPTION_STATE_ON_HOLD";
+
+      return {
+        productId: subscriptionId,
+        purchaseToken: purchaseToken,
+        expiryTimeMillis: parseInt(subscription.expiryTimeMillis, 10),
+        autoRenewing: subscription.autoRenewing,
+        isExpired: Date.now() > parseInt(subscription.expiryTimeMillis, 10),
+        localExpirationDate: new Date(
+          parseInt(subscription.expiryTimeMillis, 10)
+        ).toLocaleString(),
+        isSuspended,
+      };
+    } catch (error) {
+      // Purchase token not in productId
+      console.error(
+        `Erreur lors de la vérification de l'abonnement pour ${subscriptionId} :`,
+        error
+      );
+      // Vous pouvez continuer ou gérer les erreurs en conséquence
+    }
+  }
+
+  return null;
+}
+
+//===============================================================
+// PUT : savePlan
+//===============================================================
+router.put("/savePlan", async (req, res) => {
+  console.log("/addTokens : req.body : ", req.body);
+
+  const checkStatus = checkBody(req.body, ["userId"]);
+  const { userId, plan, purchaseToken, productId } = req.body;
+
+  if (!checkStatus.status) {
+    console.log("1 : checkStatus.error : ", checkStatus.error);
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+
+  try {
+    // const user = await User.findOneAndUpdate(
+    //   { _id: userId },
+    //   { $inc: { "ia.tokenUsed": tokensCount } },
+    //   { new: true } // Retourne le document mis à jour
+    // );
+    const startDate = new Date();
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        $set: {
+          "subscription.plan": plan,
+          "subscription.purchaseToken": purchaseToken,
+          "subscription.startDate": startDate,
+          "subscription.productId": productId,
+        },
+      },
+      { new: true } // Retourne le document mis à jour
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        result: false,
+        errorMsg: `User not found with id: ${userId}`,
+      });
+    }
+
+    res.json({ result: true, data: user });
+  } catch (error) {
+    return Util.catchError(res, error, `Error while saving plan ${plan}:`);
+  }
+});
 //===============================================================
 // DELETE/<email> : delete users and all its data (used by IA)
 //===============================================================
