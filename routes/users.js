@@ -610,20 +610,37 @@ if (!process.env.GOOGLE_PLAY_DEV_API_KEY) {
     "Please set the GOOGLE_PLAY_DEV_API_KEY environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
   );
 }
-if (!process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL) {
-  console.error(
-    "Please set the GOOGLE_PLAY_DEV_CLIENT_EMAIL environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
-  );
-}
+// if (!process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL) {
+//   console.error(
+//     "Please set the GOOGLE_PLAY_DEV_CLIENT_EMAIL environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
+//   );
+// }
 
+// if (!process.env.GOOGLE_PLAY_DEV_API_FILE_IN_BASE64) {
+//   console.error(
+//     "Please convert your service account key file to base64 and set the GOOGLE_PLAY_DEV_API_FILE_IN_BASE64 environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
+//   );
+// }
+const credentialsJSON = Buffer.from(
+  process.env.GOOGLE_PLAY_DEV_API_FILE_IN_BASE64,
+  "base64"
+).toString("utf8");
+const credentials = JSON.parse(credentialsJSON);
+
+// Configurer GoogleAuth avec les informations d’identification JSON
 const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PLAY_DEV_API_KEY,
-  },
-  projectId: "foodstock-424310",
+  credentials: credentials,
   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
 });
+
+// const auth = new google.auth.GoogleAuth({
+//   credentials: {
+//     client_email: process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL,
+//     private_key: process.env.GOOGLE_PLAY_DEV_API_KEY,
+//   },
+//   projectId: "foodstock-424310",
+//   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+// });
 
 //===============================================================
 // PUT /getSubscriptionFromPlayStore
