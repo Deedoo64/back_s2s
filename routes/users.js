@@ -11,10 +11,13 @@ const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 const { refreshToken } = require("firebase-admin/app");
+const nodemailer = require("nodemailer");
 
 // Pour l'utilisation de Google Developer API
 const { google } = require("googleapis");
-const playDeveloperApi = google.androidpublisher("v3");
+const { LoginTicket } = require("google-auth-library");
+// const playDeveloperApi = google.androidpublisher("v3");
+const crypto = require("crypto");
 
 //===============================================================
 // GET:/test/user : Test si un utilisateur existe via son email
@@ -151,41 +154,6 @@ router.post("/signinWithToken", (req, res) => {
       console.error(error);
       res.json({ result: false, error: errorMessage });
     });
-});
-
-//===============================================================
-// GET : Get user info from its ID
-//===============================================================
-router.get("/:id", async (req, res) => {
-  const userId = req.params.id;
-
-  console.log("In route GET:/users/<id> : userId : ", userId);
-  if (!userId) {
-    res.json({
-      result: false,
-      error: "Missing userId in route GET:/users/<id>",
-    });
-    return;
-  }
-
-  try {
-    const user = await User.findOne({ _id: userId })
-      .select("-password -token")
-      .exec();
-    if (!user) {
-      res.json({
-        result: false,
-        errorMsg: `User not found with id : ${userId}`,
-      });
-
-      return;
-    }
-    console.log("user : ", user);
-    res.json({ result: true, data: user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ result: false, errorMsg: error.message });
-  }
 });
 
 //===============================================================
@@ -397,139 +365,6 @@ router.post("/desanonymateAccount", async (req, res) => {
   }
 });
 
-// router.post("/desanonymateAccount", async (req, res) => {
-//   console.log("/desanonymateAccount : req.body : ", req.body);
-//   const checkStatus = checkBody(req.body, [
-//     "firebaseUID", // New firebase connection, may exists in DB
-//     "anonymousUID", // Existing anonymous account
-//     "email",
-//     "source",
-//     "policy",
-//   ]);
-
-//   if (!checkStatus) {
-//     return res.status(400).json({
-//       result: false,
-//       errorMsg: "Invalid request body",
-//     });
-//   }
-//   // policy may have following value :
-//   // "keepAnonymous" : anonymous account data are lost,
-//   // "keepFirebase" : previous firebase user data are lost,
-//   // "" : Error if previous firebase user exists
-//   const { firebaseUID, anonymousUID, email, source, policy } = req.body;
-
-//   const existingUserWithFirebaseUID = await User.findOne({
-//     firebaseUID: firebaseUID,
-//   });
-//   let deleteFirebaseUser = false;
-//   if (existingUserWithFirebaseUID) {
-//     // If the target connexion alraedy exists in mongoDB, it means that
-//     // it already contains data. If no policy is provided, generate an error message.
-//     if (policy === POLICIES.RETURN_ERROR_IF_FIREBASE_ALREADY_EXIST) {
-//       Util.error(
-//         `User ${existingUserWithFirebaseUID.email} already exists with firebaseUID : `,
-//         firebaseUID
-//       );
-//       Util.error(
-//         "It can not be associted to an anonymous user, send errorCode : 10"
-//       );
-//       res.json({
-//         result: false,
-//         errorCode: 10, // Should be handled in front-end
-//         errorMsg: `Account ${existingUserWithFirebaseUID.email}  has already been associated with an anonymous account`,
-//       });
-//       return;
-//     } else if (policy == POLICIES.KEEP_FIREBASE) {
-//       // In this case, the previous connection is kept, and the anonymous account is deleted
-//       // 1.a) The anonymous account is deleted in mongoDB ...
-//       try {
-//         const deletedUser = await User.findOneAndDelete({
-//           firebaseUID: anonymousUID,
-//         });
-//         console.log("Deleted user : ", deletedUser);
-//         Util.msg("Anonymous user deleted successfully", 32);
-//       } catch (error) {
-//         res.json({
-//           result: false,
-//           errorMsg: `Error while deleting anonymous account ${anonymousUID}`,
-//         });
-//         return;
-//       }
-//       // 1.b) ... remove anonymous account in firebase ...
-//       try {
-//         await FirebaseAdmin.auth().deleteUser(anonymousUID);
-//         Util.msg("Anonymous user deleted successfully in Firebase", 32);
-//       } catch (error) {
-//         Util.warning("Anonymous user not deleted", 31);
-//       }
-
-//       // 1.c)... than , returns the existing firebase account (Google, Facebook, etc.)
-//       res.json({ result: true, data: existingUserWithFirebaseUID });
-//       return;
-//     } else if (policy == POLICIES.KEEP_ANONYMOUS) {
-//       deleteFirebaseUser = true;
-//     } else {
-//       Util.error("Unknown policy : ", policy);
-//       res.json({
-//         result: false,
-//         errorMsg: "Unknown policy in desanonymateAccount",
-//       });
-//       return;
-//     }
-//   }
-
-//   // Replace anonymous account by a new one (Google, Facebook, etc.)
-//   // In mongoDB, update the firebaseUID of anonymous account matching anonymousUID
-//   // with the new firebaseUID.
-//   try {
-//     const updatedUser = await User.findOneAndUpdate(
-//       { firebaseUID: anonymousUID },
-//       {
-//         firebaseUID: firebaseUID,
-//         email: email,
-//         source: source,
-//       },
-//       { new: true } // Cette option renvoie le document mis à jour
-//     );
-
-//     console.log("Updated user : ", updatedUser);
-
-//     // Remove obsolete anonymous account in firebase
-//     try {
-//       await FirebaseAdmin.auth().deleteUser(anonymousUID);
-//       Util.msg("Anonymous user deleted successfully in Firebase", 32);
-//     } catch (error) {
-//       Util.warning("Anonymous user not deleted", 31);
-//     }
-
-//     // In the policy = keepAnonymous, the previous firebase user is deleted
-//     if (deleteFirebaseUser) {
-//       try {
-//         await User.findOneAndDelete({ firebaseUID: firebaseUID });
-//       } catch (error) {
-//         Util.error("Error while deleting previous firebase account", 31);
-//         res.json({
-//           result: false,
-//           errorMsg: "Error while deleting previous firebase account",
-//         });
-//         return;
-//       }
-//     }
-
-//     // Did si policy = keepFirebase, than udpateUser is null !!!!!
-//     res.json({ result: true, data: updatedUser });
-//   } catch (error) {
-//     const errorMessage = error.message
-//       ? error.message
-//       : "in updating a user in Firebase";
-//     console.error(error);
-//     res.json({ result: false, errorMsg: errorMessage });
-//     return;
-//   }
-//   // END MY_VERSION
-// });
-
 //===============================================================
 // PUT : /update
 //===============================================================
@@ -605,11 +440,8 @@ router.post("/addTokens", async (req, res) => {
 /////////////////////////////////////////////////////////////////////
 //                            SUBSCRIPTION
 /////////////////////////////////////////////////////////////////////
-if (!process.env.GOOGLE_PLAY_DEV_API_KEY) {
-  console.error(
-    "Please set the GOOGLE_PLAY_DEV_API_KEY environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
-  );
-}
+// Setting credential using env variable.
+//---------------------------------------
 // if (!process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL) {
 //   console.error(
 //     "Please set the GOOGLE_PLAY_DEV_CLIENT_EMAIL environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
@@ -621,6 +453,16 @@ if (!process.env.GOOGLE_PLAY_DEV_API_KEY) {
 //     "Please convert your service account key file to base64 and set the GOOGLE_PLAY_DEV_API_FILE_IN_BASE64 environment variable. It is needed to access to Google Billing.\nUnable to manage subscriptions !"
 //   );
 // }
+// const auth = new google.auth.GoogleAuth({
+//   credentials: {
+//     client_email: process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL,
+//     private_key: process.env.GOOGLE_PLAY_DEV_API_KEY,
+//   },
+//   projectId: "foodstock-424310",
+//   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+// });
+// Setting credential using full .json file converted into an env variable.
+//-------------------------------------------------------------------------
 const credentialsJSON = Buffer.from(
   process.env.GOOGLE_PLAY_DEV_API_FILE_IN_BASE64,
   "base64"
@@ -632,15 +474,6 @@ const auth = new google.auth.GoogleAuth({
   credentials: credentials,
   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
 });
-
-// const auth = new google.auth.GoogleAuth({
-//   credentials: {
-//     client_email: process.env.GOOGLE_PLAY_DEV_CLIENT_EMAIL,
-//     private_key: process.env.GOOGLE_PLAY_DEV_API_KEY,
-//   },
-//   projectId: "foodstock-424310",
-//   scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-// });
 
 //===============================================================
 // PUT /getSubscriptionFromPlayStore
@@ -841,4 +674,227 @@ router.delete("/account/:email", async (req, res) => {
     res.status(500).json({ result: false, errorMsg: error.message });
   }
 });
+
+//===============================================================
+// POST : resetListPassword
+// Send an email to the user to reset the private list passord
+//===============================================================
+router.post("/resetListPassword", async (req, res) => {
+  console.log("In my route : /resetListPassword");
+  const { email, backendAddress, title, text } = req.body;
+  const checkStatus = checkBody(req.body, [
+    "email",
+    "backendAddress",
+    "text",
+    "title",
+  ]);
+  if (!checkStatus.status) {
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `User not found with email : ${email}`,
+      });
+      return;
+    }
+
+    const emailSender = process.env.FOOD_STOCK_EMAIL_SENDER;
+    if (!emailSender) {
+      console.error(
+        "Please set the FOOD_STOCK_EMAIL_SENDER environment variable"
+      );
+    }
+    const emailSenderPassword = process.env.FOOD_STOCK_EMAIL_SENDER_PASSWORD;
+    if (!emailSenderPassword) {
+      console.error(
+        "Please set the FOOD_STOCK_EMAIL_SENDER_PASSWORD environment variable"
+      );
+    }
+    // Génère un lien ou code de réinitialisation (exemple simple)
+    const resetCode = Math.random().toString(36).substr(2, 8); // Exemple de token simple
+    const resetLink = `${backendAddress}/users/confirmResetListPasswd?resetCode=${resetCode}&userId=${user.id}`;
+
+    // Update resetCode in database
+    user.resetCode = resetCode;
+    await user.save();
+
+    // Configuration du transporteur SMTP
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: emailSender, // Ton email Gmail
+        pass: emailSenderPassword, // Le mot de passe d'application Google
+      },
+    });
+
+    const htmlText = text.replace("\n", "<br>");
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: `Food Stock <${emailSender}`, // L'expéditeur
+      to: email, // Destinataire
+      subject: title,
+      text: `${text}\n${resetLink}`,
+      html: `<p>${htmlText}</p><a href="${resetLink}">${resetLink}</a>`,
+    };
+
+    // Envoi de l'email
+    await transporter.sendMail(mailOptions);
+    res.json({ result: true });
+    return;
+  } catch (error) {
+    console.error(error);
+    console.log(`Error during reseting list password for user ${email}`);
+    const errorMessage = error.message
+      ? error.message
+      : "in reseting List password";
+    res.json({ result: false, errorMsg: errorMessage });
+  }
+});
+//===============================================================
+// GET : confirmResetListPasswd
+// Intercept the reset private list when user click on the link
+// from its email.
+//===============================================================
+router.get("/confirmResetListPasswd", async (req, res) => {
+  console.log("===============> In my route : /confirmResetListPasswd");
+
+  const { resetCode, userId } = req.query;
+  const checkStatus = checkBody(req.query, ["resetCode", "userId"]);
+  if (!checkStatus.status) {
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `Unknonw user with id : ${userId}, can not reset the private list password`,
+      });
+      return;
+    }
+
+    // Vérifie si le resetCode
+    if (user.resetCode !== resetCode) {
+      res.json({
+        result: false,
+        errorMsg: `Bad reset code, can not reset the private list password`,
+      });
+      return;
+    }
+
+    console.log("Yes, the code can be reset now !!!");
+    user.tokenList = "";
+    user.save();
+
+    // Si le token est valide, redirige l'utilisateur vers une page frontend
+    // Exemple : page React/Vue/Angular pour réinitialiser le mot de passe
+    res.redirect(
+      `https://deedoo64.github.io/FoodStockResources/home_page_site/#/resetListPassword?result=true`
+    );
+    return;
+  } catch (error) {
+    console.error(error);
+    res.json({
+      result: false,
+      errorMsg: `Can not reset the private list password`,
+    });
+  }
+});
+
+//===============================================================
+// POST : saveListPassord
+//===============================================================
+function hashWithSHA256(input) {
+  return crypto.createHash("sha256").update(input, "utf8").digest("hex");
+}
+
+router.post("/saveListPassword", async (req, res) => {
+  const checkStatus = checkBody(req.body, ["email", "listPassword"]);
+  if (!checkStatus.status) {
+    console.log("1 : saveListPassword.error : ", checkStatus.error);
+    res.json({ result: false, errorMsg: checkStatus.error });
+    return;
+  }
+  const { email, listPassword } = req.body;
+
+  try {
+    // const nicknameExists = await User.findOne({ nickname: nickname });
+    // if (nicknameExists) {
+    //   console.log("2 : data != null");
+    //   res.json({ result: false, errorMsg: "Nickname already exists" });
+    //   return;
+    // }
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      console.log("saveListPassword() email not found");
+      res.json({ result: false, errorMsg: "Email does not exists" });
+      return;
+    }
+
+    // const tokenList = bcrypt.hashSync(listPassword, 10);
+    const tokenList = hashWithSHA256(listPassword);
+    console.log(`passwd: ${listPassword}`);
+    console.log(`tokenList: ${tokenList}`);
+    // Update tokenList of user
+    user.tokenList = tokenList;
+
+    const savedUser = await user.save();
+    console.log("4 : save");
+    res.json({ result: true, data: user });
+  } catch (error) {
+    console.error(error);
+    console.log("Error during saving user in saveListPassword");
+    const errorMessage = error.message
+      ? error.message
+      : "in saving List password";
+    res.json({ result: false, errorMsg: errorMessage });
+  }
+});
+
+//===============================================================
+// GET : Get user info from its ID
+// !!! This route is dynamic (catch any route since :id could be anything.)
+// It must be a the end of this file !!!
+//===============================================================
+router.get("/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  console.log("In route GET:/users/<id> : userId : ", userId);
+  if (!userId) {
+    res.json({
+      result: false,
+      error: "Missing userId in route GET:/users/<id>",
+    });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ _id: userId })
+      .select("-password -token")
+      .exec();
+    if (!user) {
+      res.json({
+        result: false,
+        errorMsg: `User not found with id : ${userId}`,
+      });
+
+      return;
+    }
+    console.log("user : ", user);
+    res.json({ result: true, data: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, errorMsg: error.message });
+  }
+});
+
 module.exports = router;

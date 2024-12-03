@@ -29,6 +29,8 @@ const userSchema = mongoose.Schema(
     password: String,
     token: String,
     firebaseUID: String, // For user Google, Facebook or Anonyme
+    tokenList: String, // Used to store list password
+    resetCode: String, // Reset code send by email to reset tokenList (for private list)
     ia: iaSchema,
     subscription: subscriptionSchema,
     source: {
